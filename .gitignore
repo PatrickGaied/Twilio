@@ -692,3 +692,70 @@ celerybeat-schedule.db
 # Runtime files
 *.pid
 *.lock
+
+# Docker specific
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# ChromaDB files
+.chroma/
+*.chroma/
+chroma.sqlite3
+chroma_*.db
+
+# Supabase local files
+supabase/.branches/
+supabase/.temp/
+supabase/config.toml
+
+# API keys and secrets (extra protection)
+*.key
+*.pem
+secrets/
+credentials/
+
+# Development overrides
+.env.override
+.env.*.local
+
+# IDE files
+.fleet/
+.vscode/launch.json
+.vscode/settings.json
+*.code-workspace
+
+# Temporary uploads
+uploads/
+temp/
+tmp/
+
+# Generated API docs
+docs/api/
+openapi.json
+
+# Dependencies lock files that change frequently
+package-lock.json
+yarn.lock
+poetry.lock
+
+# Build artifacts
+dist/
+build/
+*.wasm
+
+# AI/ML specific
+*.onnx
+*.safetensors
+models/
+embeddings/
+vectors/
+
+# Performance monitoring
+.sentrycli/
+.sentry-native/
+
+# Local database files
+*.db-journal
+*.db-wal
+*.db-shm

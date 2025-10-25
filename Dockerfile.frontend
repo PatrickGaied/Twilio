@@ -1,0 +1,18 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY segmind/frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy frontend code
+COPY segmind/frontend/ .
+
+# Expose port
+EXPOSE 3000
+
+# Run the application
+CMD ["npm", "run", "dev"]

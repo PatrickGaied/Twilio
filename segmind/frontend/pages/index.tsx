@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
-import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target } from 'lucide-react'
+import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus } from 'lucide-react'
 
 interface SegmentData {
   name: string
