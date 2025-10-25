@@ -18,10 +18,16 @@
 
   body {
     @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    --tooltip-bg: white;
+    --tooltip-text: #1f2937;
+    --tooltip-border: #e5e7eb;
   }
 
   .dark body {
     @apply bg-gray-900 text-gray-100;
+    --tooltip-bg: #374151;
+    --tooltip-text: #f3f4f6;
+    --tooltip-border: #4b5563;
   }
 
   .dark {
@@ -145,12 +151,24 @@
     @apply px-6 py-4 font-semibold text-gray-900 bg-gray-50 border-b border-gray-200;
   }
 
+  .dark .table-modern th {
+    @apply text-gray-100 bg-gray-700 border-gray-600;
+  }
+
   .table-modern td {
     @apply px-6 py-4 border-b border-gray-100;
   }
 
+  .dark .table-modern td {
+    @apply border-gray-700;
+  }
+
   .table-modern tbody tr:hover {
     @apply bg-gray-50;
+  }
+
+  .dark .table-modern tbody tr:hover {
+    @apply bg-gray-700;
   }
 
   .progress-bar {

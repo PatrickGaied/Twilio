@@ -325,7 +325,7 @@ export default function ProductsPage() {
                       angle={-45}
                       textAnchor="end"
                       height={80}
-                      formatter={(value) => value.split('.').pop()}
+                      tickFormatter={(value) => value.split('.').pop()}
                     />
                     <YAxis />
                     <Tooltip

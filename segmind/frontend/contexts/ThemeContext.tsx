@@ -16,11 +16,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Only run on client side after hydration
   useEffect(() => {
     setMounted(true)
+    // Read the current theme from localStorage or system preference
     const savedTheme = localStorage.getItem('theme') as Theme
     if (savedTheme) {
       setTheme(savedTheme)
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark')
+    } else {
+      setTheme('light')
     }
   }, [])
 
@@ -29,6 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!mounted) return
 
     localStorage.setItem('theme', theme)
+    // Apply theme immediately to prevent any flash
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {

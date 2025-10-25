@@ -46,7 +46,19 @@ export default function DashboardCharts({ segmentData, channelData }: DashboardC
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: any) => [value.toLocaleString(), 'Customers']} />
+              <Tooltip
+                formatter={(value: any) => [value.toLocaleString(), 'Customers']}
+                contentStyle={{
+                  backgroundColor: 'var(--tooltip-bg)',
+                  color: 'var(--tooltip-text)',
+                  border: '1px solid var(--tooltip-border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+                labelStyle={{
+                  color: 'var(--tooltip-text)'
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -63,7 +75,18 @@ export default function DashboardCharts({ segmentData, channelData }: DashboardC
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="name" stroke="#64748b" />
               <YAxis stroke="#64748b" />
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--tooltip-bg)',
+                  color: 'var(--tooltip-text)',
+                  border: '1px solid var(--tooltip-border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+                labelStyle={{
+                  color: 'var(--tooltip-text)'
+                }}
+              />
               <Bar dataKey="roi" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">

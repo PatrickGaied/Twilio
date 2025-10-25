@@ -136,6 +136,10 @@ export default function Dashboard() {
                     <TrendingUp className="h-4 w-4" />
                     <span>Dashboard</span>
                   </a>
+                  <a href="/segments" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Users className="h-4 w-4" />
+                    <span>Segments</span>
+                  </a>
                   <a href="/breakdown" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
                     <Target className="h-4 w-4" />
                     <span>Breakdown</span>
@@ -166,6 +170,10 @@ export default function Dashboard() {
                   <a href="/" className="block nav-item active dark:text-purple-400 dark:bg-purple-900/20">
                     <TrendingUp className="h-4 w-4" />
                     <span>Dashboard</span>
+                  </a>
+                  <a href="/segments" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Users className="h-4 w-4" />
+                    <span>Segments</span>
                   </a>
                   <a href="/breakdown" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
                     <Target className="h-4 w-4" />
