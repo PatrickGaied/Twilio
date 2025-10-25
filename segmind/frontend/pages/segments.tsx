@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
 import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import ProductSegmentInsights from '../components/ProductSegmentInsights'
+import CampaignModal from '../components/CampaignModal'
+import ThemeToggle from '../components/ThemeToggle'
 
 interface CustomerSegment {
   id: string
@@ -34,6 +37,11 @@ export default function SegmentsPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [segmentOverview, setSegmentOverview] = useState<any>({})
   const [searchTerm, setSearchTerm] = useState('')
+  const [campaignModal, setCampaignModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
 
   useEffect(() => {
     fetchSegmentsData()
@@ -137,6 +145,10 @@ export default function SegmentsPage() {
     customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  const handleCreateCampaignFromInsight = (product: string, segment: string) => {
+    setCampaignModal({ isOpen: true, productName: product, segmentName: segment })
+  }
+
   return (
     <>
       <Head>
@@ -144,20 +156,48 @@ export default function SegmentsPage() {
         <meta name="description" content="Manage and analyze customer segments" />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header */}
-        <header className="header-glass sticky top-0 z-40">
+        <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold gradient-text">Customer Segments</h1>
-                <p className="text-gray-600 mt-1">Manage and analyze your customer segments for targeted messaging</p>
+                <h1 className="text-3xl font-bold brand-text">Segmind</h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">Customer Messaging & Analytics Platform</p>
               </div>
-              <div className="flex items-center space-x-4">
-                <a href="/" className="btn-ghost">← Back to Dashboard</a>
+
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-6">
+                <nav className="flex items-center space-x-1">
+                  <a href="/" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </a>
+                  <a href="/segments" className="nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                    <Users className="h-4 w-4" />
+                    <span>Segments</span>
+                  </a>
+                  <a href="/breakdown" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Target className="h-4 w-4" />
+                    <span>Breakdown</span>
+                  </a>
+                </nav>
+
+                <div className="flex items-center space-x-4">
+                  <ThemeToggle />
+                  <button className="btn-primary">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Segment
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile menu button */}
+              <div className="lg:hidden flex items-center space-x-3">
+                <ThemeToggle />
                 <button className="btn-primary">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Segment
+                  Create
                 </button>
               </div>
             </div>
@@ -171,8 +211,8 @@ export default function SegmentsPage() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Segments</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Segments</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     {segmentOverview.total_segments || 0}
                   </p>
                   <div className="stat-badge positive mt-2">
@@ -187,8 +227,8 @@ export default function SegmentsPage() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     {segmentOverview.total_customers?.toLocaleString() || '0'}
                   </p>
                   <div className="stat-badge positive mt-2">
@@ -203,8 +243,8 @@ export default function SegmentsPage() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Revenue per Segment</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Revenue per Segment</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     $142K
                   </p>
                   <div className="stat-badge neutral mt-2">
@@ -222,7 +262,7 @@ export default function SegmentsPage() {
             <div className="lg:col-span-1">
               <div className="klaviyo-card">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">All Segments</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">All Segments</h3>
                   <Filter className="h-5 w-5 text-gray-400" />
                 </div>
 
@@ -236,8 +276,8 @@ export default function SegmentsPage() {
                       }}
                       className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
                         selectedSegment?.id === segment.id
-                          ? 'border-purple-200 bg-purple-50'
-                          : 'border-gray-100 hover:border-gray-200'
+                          ? 'border-purple-200 bg-purple-50 dark:border-purple-600 dark:bg-purple-900/20'
+                          : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -246,10 +286,10 @@ export default function SegmentsPage() {
                             {getSegmentIcon(segment.type)}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900">{segment.name}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{segment.description}</p>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">{segment.name}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{segment.description}</p>
                             <div className="flex items-center space-x-4 mt-2">
-                              <span className="text-sm font-medium text-gray-900">
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">
                                 {segment.customer_count.toLocaleString()} customers
                               </span>
                             </div>
@@ -274,28 +314,33 @@ export default function SegmentsPage() {
                           {getSegmentIcon(selectedSegment.type)}
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-900">{selectedSegment.name}</h2>
-                          <p className="text-gray-600 mt-1">{selectedSegment.description}</p>
+                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedSegment.name}</h2>
+                          <p className="text-gray-600 dark:text-gray-400 mt-1">{selectedSegment.description}</p>
                         </div>
                       </div>
                       <div className="flex space-x-2">
                         <button className="btn-ghost">Edit</button>
-                        <button className="btn-primary">Create Campaign</button>
+                        <button
+                          onClick={() => setCampaignModal({ isOpen: true, segmentName: selectedSegment.name })}
+                          className="btn-primary"
+                        >
+                          Create Campaign
+                        </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900">{selectedSegment.customer_count.toLocaleString()}</p>
-                        <p className="text-sm text-gray-600">Total Customers</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedSegment.customer_count.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Total Customers</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-green-600">$1,247</p>
-                        <p className="text-sm text-gray-600">Avg LTV</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Avg LTV</p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-purple-600">12.4%</p>
-                        <p className="text-sm text-gray-600">Conversion Rate</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Conversion Rate</p>
                       </div>
                     </div>
                   </div>
@@ -303,7 +348,7 @@ export default function SegmentsPage() {
                   {/* Customers Table */}
                   <div className="klaviyo-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">Customers in Segment</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Customers in Segment</h3>
                       <div className="flex items-center space-x-4">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -312,7 +357,7 @@ export default function SegmentsPage() {
                             placeholder="Search customers..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                           />
                         </div>
                       </div>
@@ -339,13 +384,13 @@ export default function SegmentsPage() {
                                     {customer.first_name?.charAt(0) || 'U'}
                                   </div>
                                   <div>
-                                    <p className="font-medium text-gray-900">{customer.first_name} {customer.last_name}</p>
-                                    <p className="text-sm text-gray-600">{customer.email}</p>
+                                    <p className="font-medium text-gray-900 dark:text-white">{customer.first_name} {customer.last_name}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{customer.email}</p>
                                   </div>
                                 </div>
                               </td>
                               <td>
-                                <span className="font-medium text-gray-900">{customer.total_orders}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{customer.total_orders}</span>
                               </td>
                               <td>
                                 <span className="font-medium text-green-600">${customer.total_spent.toLocaleString()}</span>
@@ -358,13 +403,13 @@ export default function SegmentsPage() {
                                       style={{ width: `${Math.min(customer.conversion_rate * 100, 100)}%` }}
                                     ></div>
                                   </div>
-                                  <span className="text-sm font-medium text-gray-900">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">
                                     {(customer.conversion_rate * 100).toFixed(1)}%
                                   </span>
                                 </div>
                               </td>
                               <td>
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {new Date(customer.last_activity).toLocaleDateString()}
                                 </span>
                               </td>
@@ -390,15 +435,28 @@ export default function SegmentsPage() {
               ) : (
                 <div className="klaviyo-card">
                   <div className="text-center py-12">
-                    <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Segment</h3>
-                    <p className="text-gray-600">Choose a segment from the left to view its details and customers.</p>
+                    <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Customer Segments</h3>
+                    <p className="text-gray-600 dark:text-gray-400">Analyze customer behavior and create targeted campaigns.</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Product-Segment Insights */}
+          <div className="mt-8">
+            <ProductSegmentInsights onCreateCampaign={handleCreateCampaignFromInsight} />
+          </div>
         </main>
+
+        {/* Campaign Modal */}
+        <CampaignModal
+          isOpen={campaignModal.isOpen}
+          onClose={() => setCampaignModal({ isOpen: false })}
+          segmentName={campaignModal.segmentName}
+          productName={campaignModal.productName}
+        />
       </div>
     </>
   )

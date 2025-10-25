@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,10 +8,30 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    --tooltip-bg: white;
+    --tooltip-text: #1f2937;
+    --tooltip-border: #e5e7eb;
+  }
+
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+    --tooltip-bg: #374151;
+    --tooltip-text: #f3f4f6;
+    --tooltip-border: #4b5563;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 }
 
@@ -20,17 +40,29 @@
     @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200;
   }
 
-  .klaviyo-card-dark {
-    @apply bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-6 hover:shadow-md transition-all duration-200 text-white;
+  .dark .klaviyo-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200;
+  }
+
+  .dark .card {
+    @apply bg-gray-800 border-gray-700;
   }
 
   .metric-card {
     @apply bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden;
   }
 
+  .dark .metric-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
   .metric-card::before {
     content: '';
-    @apply absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500;
+    @apply absolute top-0 left-0 w-full h-1 bg-purple-500;
   }
 
   .btn-primary {
@@ -41,8 +73,16 @@
     @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md;
   }
 
+  .dark .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600 hover:border-gray-500;
+  }
+
   .btn-ghost {
     @apply bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  .dark .btn-ghost {
+    @apply hover:bg-gray-700 text-gray-400 hover:text-gray-200;
   }
 
   .nav-item {
@@ -53,6 +93,10 @@
     @apply bg-purple-50 text-purple-700 border border-purple-200;
   }
 
+  .dark .nav-item.active {
+    @apply bg-purple-900/30 text-purple-400 border-purple-800;
+  }
+
   .sidebar {
     @apply bg-white border-r border-gray-100 h-full;
   }
@@ -61,8 +105,14 @@
     @apply bg-white/80 backdrop-blur-lg border-b border-gray-100;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent font-bold;
+  .brand-text {
+    @apply text-purple-600 font-black tracking-tight;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  .dark .brand-text {
+    @apply text-purple-400;
   }
 
   .stat-badge {
@@ -89,6 +139,10 @@
     @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100;
   }
 
+  .dark .chart-container {
+    @apply bg-gray-800 border-gray-700;
+  }
+
   .table-modern {
     @apply w-full text-sm text-left;
   }
@@ -97,27 +151,51 @@
     @apply px-6 py-4 font-semibold text-gray-900 bg-gray-50 border-b border-gray-200;
   }
 
+  .dark .table-modern th {
+    @apply text-gray-100 bg-gray-700 border-gray-600;
+  }
+
   .table-modern td {
     @apply px-6 py-4 border-b border-gray-100;
+  }
+
+  .dark .table-modern td {
+    @apply border-gray-700;
   }
 
   .table-modern tbody tr:hover {
     @apply bg-gray-50;
   }
 
+  .dark .table-modern tbody tr:hover {
+    @apply bg-gray-700;
+  }
+
   .progress-bar {
     @apply w-full bg-gray-200 rounded-full h-2;
   }
 
+  .dark .progress-bar {
+    @apply bg-gray-700;
+  }
+
   .progress-fill {
-    @apply h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300;
+    @apply h-2 bg-purple-500 rounded-full transition-all duration-300;
   }
 
   .floating-card {
     @apply bg-white rounded-2xl shadow-lg border border-gray-100 p-6 backdrop-blur-sm;
   }
 
+  .dark .floating-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
   .glass-card {
     @apply bg-white/60 backdrop-blur-lg rounded-2xl border border-white/20 shadow-xl;
+  }
+
+  .dark .glass-card {
+    @apply bg-gray-800/60 border-gray-700/20;
   }
 }
