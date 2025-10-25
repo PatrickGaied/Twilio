@@ -5,6 +5,7 @@ import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRig
 import ProductSegmentInsights from '../components/ProductSegmentInsights'
 import CampaignModal from '../components/CampaignModal'
 import ThemeToggle from '../components/ThemeToggle'
+import AIChat from '../components/AIChat'
 
 interface CustomerSegment {
   id: string
@@ -154,6 +155,68 @@ export default function SegmentsPage() {
     setCampaignModal({ isOpen: true, productName: product, segmentName: segment })
   }
 
+  // Prepare data for AI chat
+  const getChatData = () => {
+    const topProducts = [
+      {
+        name: "iPhone 15 Pro",
+        brand: "Apple",
+        sales: 2847,
+        revenue: 2567340,
+        segment: "High Converters",
+        price: 1199.99
+      },
+      {
+        name: "Samsung Galaxy S24",
+        brand: "Samsung",
+        sales: 1923,
+        revenue: 1634550,
+        segment: "Loyal Customers",
+        price: 999.99
+      },
+      {
+        name: "MacBook Air M3",
+        brand: "Apple",
+        sales: 1456,
+        revenue: 1891244,
+        segment: "High Converters",
+        price: 1299.99
+      },
+      {
+        name: "AirPods Pro",
+        brand: "Apple",
+        sales: 3421,
+        revenue: 855250,
+        segment: "Window Shoppers",
+        price: 249.99
+      },
+      {
+        name: "Sony WH-1000XM5",
+        brand: "Sony",
+        sales: 987,
+        revenue: 394800,
+        segment: "High Converters",
+        price: 399.99
+      }
+    ]
+
+    return {
+      segments: [
+        { name: "High Converters", customers: 2847, percentage: 6.5, status: "Active" },
+        { name: "Window Shoppers", customers: 15623, percentage: 35.4, status: "Active" },
+        { name: "Cart Abandoners", customers: 8941, percentage: 20.3, status: "Active" },
+        { name: "Loyal Customers", customers: 4256, percentage: 9.7, status: "Active" },
+        { name: "At Risk", customers: 12387, percentage: 28.1, status: "Active" }
+      ],
+      topProducts,
+      overview: {
+        total_segments: segmentOverview.total_segments || 5,
+        total_customers: segmentOverview.total_customers || 44054,
+        total_revenue: topProducts.reduce((sum, p) => sum + p.revenue, 0)
+      }
+    }
+  }
+
   return (
     <>
       <Head>
@@ -292,6 +355,12 @@ export default function SegmentsPage() {
           onClose={() => setCampaignModal({ isOpen: false })}
           segmentName={campaignModal.segmentName}
           productName={campaignModal.productName}
+        />
+
+        {/* AI Chat */}
+        <AIChat
+          pageData={getChatData()}
+          context="customer segments and product performance data"
         />
       </div>
     </>

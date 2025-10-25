@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import { TrendingUp, Users, ShoppingCart, Target, Lightbulb, Zap, ArrowRight } from 'lucide-react'
+import { TrendingUp, Users, ShoppingCart, Target, Lightbulb, Zap, ArrowRight, BarChart3 } from 'lucide-react'
+import QuickInsightAnalysis from './QuickInsightAnalysis'
 
 interface ProductInsight {
   product: string
@@ -20,6 +21,7 @@ interface ProductSegmentInsightsProps {
 export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegmentInsightsProps) {
   const router = useRouter()
   const [selectedInsight, setSelectedInsight] = useState<ProductInsight | null>(null)
+  const [showAnalysis, setShowAnalysis] = useState<ProductInsight | null>(null)
 
   // Mock insights data showing product-segment correlations
   const insights: ProductInsight[] = [
@@ -159,16 +161,16 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
               </div>
 
               <div className="flex flex-col items-end space-y-2">
-                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      router.push(`/insights/${encodeURIComponent(insight.product)}`)
+                      setShowAnalysis(insight)
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
                   >
-                    <Target className="h-3 w-3" />
-                    <span>View Similar Products</span>
+                    <BarChart3 className="h-3 w-3" />
+                    <span>Analyze</span>
                   </button>
                   <button
                     onClick={(e) => {
@@ -177,10 +179,10 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
                         onCreateCampaign(insight.product, insight.segment)
                       }
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
                   >
                     <Zap className="h-3 w-3" />
-                    <span>Create Campaign</span>
+                    <span>Campaign</span>
                   </button>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -311,6 +313,21 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Insight Analysis Modal */}
+      {showAnalysis && (
+        <QuickInsightAnalysis
+          insight={showAnalysis}
+          isOpen={!!showAnalysis}
+          onClose={() => setShowAnalysis(null)}
+          onCreateCampaign={(product, segment) => {
+            if (onCreateCampaign) {
+              onCreateCampaign(product, segment)
+            }
+            setShowAnalysis(null)
+          }}
+        />
       )}
     </div>
   )
