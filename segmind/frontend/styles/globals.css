@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .klaviyo-card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200;
+  }
+
+  .klaviyo-card-dark {
+    @apply bg-gray-900 rounded-2xl shadow-sm border border-gray-800 p-6 hover:shadow-md transition-all duration-200 text-white;
+  }
+
+  .metric-card {
+    @apply bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500;
+  }
+
+  .btn-primary {
+    @apply bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5;
+  }
+
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  .nav-item {
+    @apply flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 font-medium;
+  }
+
+  .nav-item.active {
+    @apply bg-purple-50 text-purple-700 border border-purple-200;
+  }
+
+  .sidebar {
+    @apply bg-white border-r border-gray-100 h-full;
+  }
+
+  .header-glass {
+    @apply bg-white/80 backdrop-blur-lg border-b border-gray-100;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent font-bold;
+  }
+
+  .stat-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .stat-badge.positive {
+    @apply bg-emerald-100 text-emerald-800 border border-emerald-200;
+  }
+
+  .stat-badge.negative {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .stat-badge.neutral {
+    @apply bg-gray-100 text-gray-800 border border-gray-200;
+  }
+
+  .segment-pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border;
+  }
+
+  .chart-container {
+    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100;
+  }
+
+  .table-modern {
+    @apply w-full text-sm text-left;
+  }
+
+  .table-modern th {
+    @apply px-6 py-4 font-semibold text-gray-900 bg-gray-50 border-b border-gray-200;
+  }
+
+  .table-modern td {
+    @apply px-6 py-4 border-b border-gray-100;
+  }
+
+  .table-modern tbody tr:hover {
+    @apply bg-gray-50;
+  }
+
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-2;
+  }
+
+  .progress-fill {
+    @apply h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300;
+  }
+
+  .floating-card {
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100 p-6 backdrop-blur-sm;
+  }
+
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-lg rounded-2xl border border-white/20 shadow-xl;
+  }
+}

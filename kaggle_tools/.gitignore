@@ -1,0 +1,45 @@
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+ecommerce.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+
+# Data files (keep structure but ignore large files)
+data/
+cache/
+*.csv
+*.json
+*.parquet
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Output files
+outputs/
+results/
