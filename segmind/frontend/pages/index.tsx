@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
-import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2 } from 'lucide-react'
+import ThemeToggle from '../components/ThemeToggle'
+import CampaignModal from '../components/CampaignModal'
+
+// Create a client-side only chart component
+const DashboardCharts = dynamic(() => import('../components/DashboardCharts'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
+})
 
 interface SegmentData {
   name: string
@@ -23,6 +31,12 @@ export default function Dashboard() {
   const [channelData, setChannelData] = useState<ChannelData[]>([])
   const [realtimeMetrics, setRealtimeMetrics] = useState<any>({})
   const [overview, setOverview] = useState<any>({})
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [campaignModal, setCampaignModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
 
   useEffect(() => {
     // Fetch data from API
@@ -105,41 +119,61 @@ export default function Dashboard() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header */}
-        <header className="header-glass sticky top-0 z-40">
+        <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold gradient-text">Segmind</h1>
-                <p className="text-gray-600 mt-1">Customer Messaging & Analytics Platform</p>
+                <h1 className="text-3xl font-bold brand-text">Segmind</h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">Customer Messaging & Analytics Platform</p>
               </div>
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-4">
-                  <a href="/segments" className="nav-item">
-                    <Users className="h-4 w-4" />
-                    <span>Segments</span>
-                  </a>
-                  <a href="/products" className="nav-item">
-                    <Target className="h-4 w-4" />
-                    <span>Products</span>
-                  </a>
-                  <a href="/analytics" className="nav-item">
+
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-6">
+                <nav className="flex items-center space-x-1">
+                  <a href="/" className="nav-item active dark:text-purple-400 dark:bg-purple-900/20">
                     <TrendingUp className="h-4 w-4" />
-                    <span>Analytics</span>
+                    <span>Dashboard</span>
                   </a>
+                  <a href="/breakdown" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Target className="h-4 w-4" />
+                    <span>Breakdown</span>
+                  </a>
+                </nav>
+
+                <div className="flex items-center space-x-4">
+                  <ThemeToggle />
                 </div>
-                <div className="floating-card px-4 py-2">
-                  <div className="flex items-center space-x-3">
-                    <Activity className="h-4 w-4 text-green-500" />
-                    <div className="text-right">
-                      <div className="text-xs text-gray-500">Live Activity</div>
-                      <div className="text-sm font-medium">{realtimeMetrics?.live_metrics?.messages_per_minute || 0} msg/min</div>
-                    </div>
-                  </div>
-                </div>
+              </div>
+
+              {/* Mobile menu button */}
+              <div className="lg:hidden flex items-center space-x-3">
+                <ThemeToggle />
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
               </div>
             </div>
+
+            {/* Mobile Navigation */}
+            {mobileMenuOpen && (
+              <div className="lg:hidden pb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                <nav className="space-y-2">
+                  <a href="/" className="block nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </a>
+                  <a href="/breakdown" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Target className="h-4 w-4" />
+                    <span>Breakdown</span>
+                  </a>
+                </nav>
+              </div>
+            )}
           </div>
         </header>
 
@@ -150,8 +184,8 @@ export default function Dashboard() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Messages</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Messages</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {overview.total_messages_sent?.toLocaleString() || '0'}
                   </p>
                 </div>
@@ -162,8 +196,8 @@ export default function Dashboard() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {overview.total_customers?.toLocaleString() || '0'}
                   </p>
                 </div>
@@ -174,8 +208,8 @@ export default function Dashboard() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Revenue Attributed</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue Attributed</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     ${overview.revenue_attributed?.toLocaleString() || '0'}
                   </p>
                 </div>
@@ -186,8 +220,8 @@ export default function Dashboard() {
             <div className="metric-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Engagement Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Engagement Rate</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {overview.avg_engagement_rate || 0}%
                   </p>
                 </div>
@@ -196,68 +230,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Customer Segments */}
-            <div className="chart-container">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Customer Segments</h3>
-                <a href="/segments" className="btn-ghost text-sm">View All →</a>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={segmentData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      dataKey="count"
-                      label={({ name, percentage }) => `${name}: ${percentage}%`}
-                    >
-                      {segmentData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: any) => [value.toLocaleString(), 'Customers']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Channel Performance */}
-            <div className="chart-container">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Channel Performance</h3>
-                <a href="/analytics" className="btn-ghost text-sm">View Analytics →</a>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={channelData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="name" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip />
-                    <Bar dataKey="roi" fill="url(#barGradient)" radius={[4, 4, 0, 0]} />
-                    <defs>
-                      <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+          <DashboardCharts segmentData={segmentData} channelData={channelData} />
 
           {/* Detailed Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Segment Details */}
             <div className="klaviyo-card lg:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Segment Breakdown</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Segment Breakdown</h3>
               <div className="space-y-4">
                 {segmentData.map((segment, index) => (
-                  <div key={segment.name} className="group p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-200 cursor-pointer">
+                  <div
+                    key={segment.name}
+                    onClick={() => setCampaignModal({ isOpen: true, segmentName: segment.name })}
+                    className="group p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-purple-200 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-all duration-200 cursor-pointer"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div
@@ -267,8 +253,8 @@ export default function Dashboard() {
                           {segment.name.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{segment.name}</p>
-                          <p className="text-sm text-gray-600">{segment.count.toLocaleString()} customers</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{segment.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{segment.count.toLocaleString()} customers</p>
                           <div className="progress-bar w-32 mt-2">
                             <div
                               className="h-2 rounded-full transition-all duration-300"
@@ -281,9 +267,14 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900">{segment.percentage}%</p>
-                        <div className="segment-pill" style={{ backgroundColor: `${COLORS[index % COLORS.length]}20`, borderColor: COLORS[index % COLORS.length], color: COLORS[index % COLORS.length] }}>
-                          Active
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{segment.percentage}%</p>
+                        <div className="flex items-center space-x-2">
+                          <div className="segment-pill" style={{ backgroundColor: `${COLORS[index % COLORS.length]}20`, borderColor: COLORS[index % COLORS.length], color: COLORS[index % COLORS.length] }}>
+                            Active
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Wand2 className="h-4 w-4 text-purple-600" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -294,24 +285,24 @@ export default function Dashboard() {
 
             {/* Real-time Activity */}
             <div className="klaviyo-card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Today's Activity</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Today's Activity</h3>
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Messages Sent</span>
+                  <span className="text-gray-600 dark:text-gray-400">Messages Sent</span>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-gray-900">{realtimeMetrics.messages_sent_today?.toLocaleString() || '0'}</span>
+                    <span className="text-xl font-bold text-gray-900 dark:text-white">{realtimeMetrics.messages_sent_today?.toLocaleString() || '0'}</span>
                     <div className="stat-badge positive text-xs">+15%</div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Revenue</span>
+                  <span className="text-gray-600 dark:text-gray-400">Revenue</span>
                   <div className="text-right">
                     <span className="text-xl font-bold text-green-600">${realtimeMetrics.revenue_today?.toLocaleString() || '0'}</span>
                     <div className="stat-badge positive text-xs">+8%</div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Conversions</span>
+                  <span className="text-gray-600 dark:text-gray-400">Conversions</span>
                   <div className="text-right">
                     <span className="text-xl font-bold text-purple-600">{realtimeMetrics.recent_conversions || 0}</span>
                     <div className="stat-badge neutral text-xs">±0%</div>
@@ -321,20 +312,20 @@ export default function Dashboard() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">Delivery Rate</span>
-                      <span className="font-semibold text-gray-900">{realtimeMetrics.live_metrics?.delivery_rate_today || 0}%</span>
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">Delivery Rate</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{realtimeMetrics.live_metrics?.delivery_rate_today || 0}%</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">Engagement Rate</span>
-                      <span className="font-semibold text-gray-900">{realtimeMetrics.live_metrics?.engagement_rate_today || 0}%</span>
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">Engagement Rate</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">{realtimeMetrics.live_metrics?.engagement_rate_today || 0}%</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
-                  <div className="text-center p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                    <p className="text-sm text-gray-600 mb-1">Top Product Today</p>
-                    <p className="font-bold text-gray-900">{realtimeMetrics.top_selling_product_today || 'iPhone 15 Pro'}</p>
+                  <div className="text-center p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl border border-purple-100 dark:border-purple-800">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Top Product Today</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{realtimeMetrics.top_selling_product_today || 'iPhone 15 Pro'}</p>
                     <p className="text-sm font-semibold text-green-600">${realtimeMetrics.electronics_sales_today?.toLocaleString() || '8,934'} sales</p>
                   </div>
                 </div>
@@ -342,26 +333,15 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-12 flex justify-center space-x-4">
-            <button className="btn-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Campaign
-            </button>
-            <a href="/segments" className="btn-secondary">
-              <Users className="h-4 w-4 mr-2" />
-              View All Segments
-            </a>
-            <a href="/products" className="btn-secondary">
-              <Target className="h-4 w-4 mr-2" />
-              Products Analytics
-            </a>
-            <a href="/analytics" className="btn-secondary">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Full Analytics Report
-            </a>
-          </div>
         </main>
+
+        {/* Campaign Modal */}
+        <CampaignModal
+          isOpen={campaignModal.isOpen}
+          onClose={() => setCampaignModal({ isOpen: false })}
+          segmentName={campaignModal.segmentName}
+          productName={campaignModal.productName}
+        />
       </div>
     </>
   )

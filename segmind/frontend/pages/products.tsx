@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { Smartphone, Laptop, Headphones, Gamepad2, Tv, TrendingUp, ShoppingCart, Target } from 'lucide-react'
+import { Smartphone, Laptop, Headphones, Gamepad2, Tv, TrendingUp, ShoppingCart, Target, Wand2, Users, Menu, X } from 'lucide-react'
+import ThemeToggle from '../components/ThemeToggle'
+import CampaignModal from '../components/CampaignModal'
 
 interface TopProduct {
   product_id: string
@@ -29,6 +31,12 @@ export default function ProductsPage() {
   const [categoryPerformance, setCategoryPerformance] = useState<CategoryPerformance[]>([])
   const [electronicsInsights, setElectronicsInsights] = useState<any>({})
   const [segmentPreferences, setSegmentPreferences] = useState<any>({})
+  const [campaignModal, setCampaignModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     fetchProductsData()
@@ -141,19 +149,69 @@ export default function ProductsPage() {
         <meta name="description" content="Product performance and segment analysis" />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b">
+        <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Products Analytics</h1>
-                <p className="text-gray-600">Electronics performance across customer segments</p>
+                <h1 className="text-3xl font-bold gradient-text">Segmind</h1>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">Customer Messaging & Analytics Platform</p>
               </div>
-              <div className="flex items-center space-x-4">
-                <a href="/" className="btn-secondary">← Back to Dashboard</a>
+
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-6">
+                <nav className="flex items-center space-x-1">
+                  <a href="/" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </a>
+                  <a href="/segments" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Users className="h-4 w-4" />
+                    <span>Segments</span>
+                  </a>
+                  <a href="/products" className="nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                    <Target className="h-4 w-4" />
+                    <span>Products</span>
+                  </a>
+                </nav>
+
+                <div className="flex items-center space-x-4">
+                  <ThemeToggle />
+                </div>
+              </div>
+
+              {/* Mobile menu button */}
+              <div className="lg:hidden flex items-center space-x-3">
+                <ThemeToggle />
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                >
+                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
               </div>
             </div>
+
+            {/* Mobile Navigation */}
+            {mobileMenuOpen && (
+              <div className="lg:hidden pb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                <nav className="space-y-2">
+                  <a href="/" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </a>
+                  <a href="/segments" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                    <Users className="h-4 w-4" />
+                    <span>Segments</span>
+                  </a>
+                  <a href="/products" className="block nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                    <Target className="h-4 w-4" />
+                    <span>Products</span>
+                  </a>
+                </nav>
+              </div>
+            )}
           </div>
         </header>
 
@@ -222,7 +280,11 @@ export default function ProductsPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Selling Products</h3>
               <div className="space-y-4">
                 {topProducts.slice(0, 5).map((product, index) => (
-                  <div key={product.product_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div
+                    key={product.product_id}
+                    onClick={() => setCampaignModal({ isOpen: true, productName: product.name, segmentName: product.top_segment })}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-all duration-200 group"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full text-blue-600 font-bold text-sm">
                         {index + 1}
@@ -235,8 +297,15 @@ export default function ProductsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{product.top_segment}</p>
-                      <p className="text-sm text-gray-600">${product.avg_price}</p>
+                      <div className="flex items-center space-x-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{product.top_segment}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">${product.avg_price}</p>
+                        </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Wand2 className="h-4 w-4 text-purple-600" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -349,6 +418,14 @@ export default function ProductsPage() {
             </div>
           )}
         </main>
+
+        {/* Campaign Modal */}
+        <CampaignModal
+          isOpen={campaignModal.isOpen}
+          onClose={() => setCampaignModal({ isOpen: false })}
+          segmentName={campaignModal.segmentName}
+          productName={campaignModal.productName}
+        />
       </div>
     </>
   )
