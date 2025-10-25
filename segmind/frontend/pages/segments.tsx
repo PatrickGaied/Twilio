@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
-import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRight, ArrowDownRight, Zap } from 'lucide-react'
 import ProductSegmentInsights from '../components/ProductSegmentInsights'
 import CampaignModal from '../components/CampaignModal'
+import PopupAdCreator from '../components/PopupAdCreator'
 import ThemeToggle from '../components/ThemeToggle'
 import AIChat from '../components/AIChat'
 
@@ -40,6 +41,11 @@ export default function SegmentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [campaignModal, setCampaignModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
+  const [popupAdModal, setPopupAdModal] = useState<{
     isOpen: boolean
     segmentName?: string
     productName?: string
@@ -153,6 +159,10 @@ export default function SegmentsPage() {
 
   const handleCreateCampaignFromInsight = (product: string, segment: string) => {
     setCampaignModal({ isOpen: true, productName: product, segmentName: segment })
+  }
+
+  const handleCreatePopupAdFromInsight = (product: string, segment: string) => {
+    setPopupAdModal({ isOpen: true, productName: product, segmentName: segment })
   }
 
   // Prepare data for AI chat
@@ -345,7 +355,10 @@ export default function SegmentsPage() {
 
           {/* Product-Segment Insights */}
           <div className="mt-8">
-            <ProductSegmentInsights onCreateCampaign={handleCreateCampaignFromInsight} />
+            <ProductSegmentInsights
+              onCreateCampaign={handleCreateCampaignFromInsight}
+              onCreatePopupAd={handleCreatePopupAdFromInsight}
+            />
           </div>
         </main>
 
@@ -355,6 +368,14 @@ export default function SegmentsPage() {
           onClose={() => setCampaignModal({ isOpen: false })}
           segmentName={campaignModal.segmentName}
           productName={campaignModal.productName}
+        />
+
+        {/* Popup Ad Creator */}
+        <PopupAdCreator
+          isOpen={popupAdModal.isOpen}
+          onClose={() => setPopupAdModal({ isOpen: false })}
+          segmentName={popupAdModal.segmentName}
+          productName={popupAdModal.productName}
         />
 
         {/* AI Chat */}

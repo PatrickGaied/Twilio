@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2, BarChart2, Clock, Dot } from 'lucide-react'
+import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2, BarChart2, Clock, Dot, Zap, Search, Network, GitBranch } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
 import CampaignModal from '../components/CampaignModal'
+import PopupAdCreator from '../components/PopupAdCreator'
 
 // Create a client-side only chart component
 const DashboardCharts = dynamic(() => import('../components/DashboardCharts'), {
@@ -28,12 +29,78 @@ interface ChannelData {
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'analytics' | 'trends' | 'clusters'>('analytics')
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
+  const [selectedCluster, setSelectedCluster] = useState<string | null>(null)
+
+  // State for pan and zoom
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [lastPan, setLastPan] = useState({ x: 0, y: 0 })
+
+  // Pan and zoom handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      setIsDragging(true)
+      setDragStart({ x: e.clientX, y: e.clientY })
+      setLastPan({ x: transform.x, y: transform.y })
+      e.preventDefault()
+    }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      const deltaX = e.clientX - dragStart.x
+      const deltaY = e.clientY - dragStart.y
+      setTransform(prev => ({
+        ...prev,
+        x: lastPan.x + deltaX,
+        y: lastPan.y + deltaY
+      }))
+      e.preventDefault()
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const container = e.currentTarget.getBoundingClientRect()
+    const mouseX = e.clientX - container.left
+    const mouseY = e.clientY - container.top
+
+    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1
+    const newScale = Math.min(Math.max(transform.scale * scaleFactor, 0.5), 3)
+
+    // Calculate new position to zoom towards mouse
+    const scaleRatio = newScale / transform.scale
+    const newX = mouseX - (mouseX - transform.x) * scaleRatio
+    const newY = mouseY - (mouseY - transform.y) * scaleRatio
+
+    setTransform({
+      x: newX,
+      y: newY,
+      scale: newScale
+    })
+  }
+
+  const resetZoom = () => {
+    setTransform({ x: 0, y: 0, scale: 1 })
+  }
+
   const [segmentData, setSegmentData] = useState<SegmentData[]>([])
   const [channelData, setChannelData] = useState<ChannelData[]>([])
   const [realtimeMetrics, setRealtimeMetrics] = useState<any>({})
   const [overview, setOverview] = useState<any>({})
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [campaignModal, setCampaignModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
+  const [popupAdModal, setPopupAdModal] = useState<{
     isOpen: boolean
     segmentName?: string
     productName?: string
@@ -282,7 +349,7 @@ export default function Dashboard() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                 }`}
               >
-                <Dot className="h-4 w-4 mr-2 inline" />
+                <Network className="h-4 w-4 mr-2 inline" />
                 Product Clusters
               </button>
             </nav>
@@ -462,8 +529,9 @@ export default function Dashboard() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Past Campaign Trends</h2>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">OCR analysis of past campaigns and their performance</p>
                 </div>
-                <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
-                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">🔍 OCR Powered</span>
+                <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full flex items-center space-x-1">
+                  <Search className="h-4 w-4 text-blue-800 dark:text-blue-200" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">OCR Powered</span>
                 </div>
               </div>
 
@@ -528,33 +596,392 @@ export default function Dashboard() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product Clusters</h2>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">Visualization of product similarity and clustering patterns</p>
                 </div>
-                <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full">
-                  <span className="text-sm text-purple-800 dark:text-purple-200 font-medium">🔬 ML Clustering</span>
+                <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full flex items-center space-x-1">
+                  <GitBranch className="h-4 w-4 text-purple-800 dark:text-purple-200" />
+                  <span className="text-sm text-purple-800 dark:text-purple-200 font-medium">ML Clustering</span>
                 </div>
               </div>
 
-              {/* Cluster Visualization */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Similarity Map</h3>
-                <div className="relative h-96 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                  {productClusters.map((cluster, index) => (
-                    <div
-                      key={index}
-                      className={`absolute w-16 h-16 rounded-full ${cluster.color} opacity-70 flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:opacity-100 transition-opacity`}
-                      style={{
-                        left: `${cluster.center.x}%`,
-                        top: `${cluster.center.y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                      title={`${cluster.cluster_name}: ${cluster.products.join(', ')}`}
+              {/* Cluster Visualization - Interactive Graph */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Graph Visualization */}
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Similarity Graph</h3>
+
+                  {/* Zoom Controls */}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <button
+                      onClick={() => setTransform(prev => ({ ...prev, scale: Math.min(prev.scale * 1.2, 3) }))}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
                     >
-                      {cluster.products.length}
+                      Zoom In
+                    </button>
+                    <button
+                      onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(prev.scale * 0.8, 0.5) }))}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
+                    >
+                      Zoom Out
+                    </button>
+                    <button
+                      onClick={resetZoom}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
+                    >
+                      Reset View
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {Math.round(transform.scale * 100)}%
+                    </span>
+                  </div>
+
+                  <div
+                    className="relative h-96 bg-gray-800 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-grab"
+                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onWheel={handleWheel}
+                  >
+                    {/* Zoomable/Pannable Content Container */}
+                    <div
+                      className="absolute inset-0 transition-transform origin-top-left"
+                      style={{
+                        transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+                        transformOrigin: '0 0'
+                      }}
+                    >
+                      {/* Graph Axes */}
+                      <div className="absolute inset-0">
+                      {/* Y-axis */}
+                      <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-400 dark:bg-gray-500"></div>
+                      {/* X-axis */}
+                      <div className="absolute left-4 bottom-4 right-4 h-px bg-gray-400 dark:bg-gray-500"></div>
+
+                      {/* Axis Labels */}
+                      <div className="absolute left-1 top-2 text-xs text-gray-300 dark:text-gray-300 transform -rotate-90 origin-left">
+                        Market Appeal
+                      </div>
+                      <div className="absolute bottom-1 right-2 text-xs text-gray-300 dark:text-gray-300">
+                        Price Range
+                      </div>
                     </div>
-                  ))}
+
+                    {/* Individual Product Dots - Randomly positioned within clusters */}
+                    {productClusters.map((cluster, clusterIndex) =>
+                      cluster.products.map((product, productIndex) => {
+                        // Generate consistent random positions within cluster radius using product name as seed
+                        const seed = product.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                        const angle = (seed * 137.5) % 360 // Golden angle for even distribution
+                        const radius = 15 + (seed % 20) // Random radius between 15-35px from center
+                        const radians = (angle * Math.PI) / 180
+                        const x = cluster.center.x + (Math.cos(radians) * radius) / 4
+                        const y = cluster.center.y + (Math.sin(radians) * radius) / 4
+                        const isSelected = selectedProduct === product
+                        const isClusterSelected = selectedCluster === cluster.cluster_name
+
+                        return (
+                          <div
+                            key={`${clusterIndex}-${productIndex}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!isDragging) {
+                                setSelectedProduct(selectedProduct === product ? null : product)
+                                setSelectedCluster(cluster.cluster_name)
+                              }
+                            }}
+                            className={`absolute w-4 h-4 rounded-full cursor-pointer transition-all duration-200 shadow-lg border-2 ${
+                              isSelected
+                                ? `${cluster.color} border-gray-900 dark:border-white scale-150 z-10`
+                                : isClusterSelected
+                                ? `${cluster.color} border-white scale-125`
+                                : `${cluster.color} border-white hover:scale-125`
+                            }`}
+                            style={{
+                              left: `${Math.max(6, Math.min(94, x))}%`,
+                              top: `${Math.max(6, Math.min(94, y))}%`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                            title={`${product} - Click to explore`}
+                          />
+                        )
+                      })
+                    )}
+
+                    {/* Cluster Boundary Shapes - Scanner Style */}
+                    {productClusters.map((cluster, index) => {
+                      const isSelected = selectedCluster === cluster.cluster_name;
+                      return (
+                        <svg
+                          key={`boundary-${index}`}
+                          className={`absolute pointer-events-none transition-opacity duration-300 ${
+                            isSelected ? 'opacity-80' : 'opacity-25'
+                          }`}
+                          style={{
+                            left: `${cluster.center.x}%`,
+                            top: `${cluster.center.y}%`,
+                            width: '120px',
+                            height: '120px',
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                          viewBox="0 0 120 120"
+                        >
+                          {/* Cluster outline circle */}
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                   cluster.color.includes('red') ? '#ef4444' :
+                                   cluster.color.includes('yellow') ? '#f59e0b' :
+                                   cluster.color.includes('green') ? '#10b981' :
+                                   cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                            strokeWidth="2"
+                            strokeDasharray="8,4"
+                            opacity="0.6"
+                          />
+
+                          {/* Outer boundary circle */}
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="55"
+                            fill="none"
+                            stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                   cluster.color.includes('red') ? '#ef4444' :
+                                   cluster.color.includes('yellow') ? '#f59e0b' :
+                                   cluster.color.includes('green') ? '#10b981' :
+                                   cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                            strokeWidth="1"
+                            strokeDasharray="4,8"
+                            opacity="0.4"
+                          />
+
+                          {/* Corner brackets for scanner effect */}
+                          <g opacity={isSelected ? "0.8" : "0.4"}>
+                            {/* Top-left bracket */}
+                            <path
+                              d="M25 25 L25 35 M25 25 L35 25"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Top-right bracket */}
+                            <path
+                              d="M95 25 L95 35 M95 25 L85 25"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Bottom-left bracket */}
+                            <path
+                              d="M25 95 L25 85 M25 95 L35 95"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Bottom-right bracket */}
+                            <path
+                              d="M95 95 L95 85 M95 95 L85 95"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                          </g>
+
+                          {/* Center crosshair when selected */}
+                          {isSelected && (
+                            <g opacity="0.6">
+                              <line x1="50" y1="60" x2="70" y2="60" stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'} strokeWidth="2"/>
+                              <line x1="60" y1="50" x2="60" y2="70" stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'} strokeWidth="2"/>
+                            </g>
+                          )}
+                        </svg>
+                      );
+                    })}
+
+                    {/* Cluster Labels */}
+                    {productClusters.map((cluster, index) => (
+                      <div
+                        key={index}
+                        className={`absolute cursor-pointer transition-all duration-200 ${
+                          selectedCluster === cluster.cluster_name ? 'scale-110' : ''
+                        }`}
+                        style={{
+                          left: `${cluster.center.x}%`,
+                          top: `${cluster.center.y + 18}%`,
+                          transform: 'translate(-50%, 0)'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!isDragging) {
+                            setSelectedCluster(selectedCluster === cluster.cluster_name ? null : cluster.cluster_name)
+                          }
+                        }}
+                      >
+                        <div className={`px-2 py-1 rounded shadow-sm border transition-colors duration-200 ${
+                          selectedCluster === cluster.cluster_name
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                            : 'bg-white dark:bg-gray-700'
+                        }`}>
+                          <span className={`text-xs font-medium ${
+                            selectedCluster === cluster.cluster_name
+                              ? 'text-white dark:text-gray-900'
+                              : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {cluster.cluster_name}
+                          </span>
+                          <div className={`text-xs ${
+                            selectedCluster === cluster.cluster_name
+                              ? 'text-gray-300 dark:text-gray-600'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {cluster.products.length} products
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    Click and drag to pan, scroll to zoom. Click on products or cluster names to explore relationships.
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                  Hover over clusters to see product details. Proximity indicates similarity.
-                </p>
+
+                {/* Product Details Sidebar */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Details</h3>
+
+                  {selectedProduct ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedProduct}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Cluster: {selectedCluster}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Market Appeal</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {Math.floor(Math.random() * 30 + 70)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Similarity Score</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {Math.floor(Math.random() * 20 + 80)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Price Range</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            ${Math.floor(Math.random() * 500 + 200)} - ${Math.floor(Math.random() * 800 + 800)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Related Products</h5>
+                        <div className="space-y-1">
+                          {productClusters
+                            .find(c => c.cluster_name === selectedCluster)?.products
+                            .filter(p => p !== selectedProduct)
+                            .map((product, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedProduct(product)}
+                                className="block w-full text-left text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {product}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(null)
+                            setSelectedCluster(null)
+                          }}
+                          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                    </div>
+                  ) : selectedCluster ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedCluster}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {productClusters.find(c => c.cluster_name === selectedCluster)?.products.length} products in this cluster
+                        </p>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Products in this cluster:</h5>
+                        <div className="space-y-1">
+                          {productClusters
+                            .find(c => c.cluster_name === selectedCluster)?.products
+                            .map((product, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedProduct(product)}
+                                className="block w-full text-left text-sm text-blue-600 dark:text-blue-400 hover:underline p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              >
+                                {product}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => setSelectedCluster(null)}
+                          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 dark:text-gray-500 mb-2">
+                        <Network className="h-12 w-12 mx-auto" />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Click on a product or cluster to explore details and relationships
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Cluster Details */}
@@ -589,27 +1016,6 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-6 border border-green-200 dark:border-green-800">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Clustering Insights</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Strong Clusters</h4>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• Premium Smartphones (iPhone 15 Pro, Galaxy S24 Ultra)</li>
-                      <li>• Professional Laptops (MacBook Pro, Dell XPS)</li>
-                      <li>• Audio Accessories (AirPods, Sony headphones)</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Cross-sell Opportunities</h4>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• iPhone buyers → AirPods, Apple Watch</li>
-                      <li>• MacBook buyers → iPad Pro, peripherals</li>
-                      <li>• Premium phone buyers → Premium accessories</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -621,6 +1027,14 @@ export default function Dashboard() {
           onClose={() => setCampaignModal({ isOpen: false })}
           segmentName={campaignModal.segmentName}
           productName={campaignModal.productName}
+        />
+
+        {/* Popup Ad Creator */}
+        <PopupAdCreator
+          isOpen={popupAdModal.isOpen}
+          onClose={() => setPopupAdModal({ isOpen: false })}
+          segmentName={popupAdModal.segmentName}
+          productName={popupAdModal.productName}
         />
       </div>
     </>

@@ -16,9 +16,10 @@ interface ProductInsight {
 
 interface ProductSegmentInsightsProps {
   onCreateCampaign?: (product: string, segment: string) => void
+  onCreatePopupAd?: (product: string, segment: string) => void
 }
 
-export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegmentInsightsProps) {
+export default function ProductSegmentInsights({ onCreateCampaign, onCreatePopupAd }: ProductSegmentInsightsProps) {
   const router = useRouter()
   const [selectedInsight, setSelectedInsight] = useState<ProductInsight | null>(null)
   const [showAnalysis, setShowAnalysis] = useState<ProductInsight | null>(null)
@@ -184,6 +185,18 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
                     <Zap className="h-3 w-3" />
                     <span>Campaign</span>
                   </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (onCreatePopupAd) {
+                        onCreatePopupAd(insight.product, insight.segment)
+                      }
+                    }}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <Zap className="h-3 w-3" />
+                    <span>Popup</span>
+                  </button>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <ArrowRight className="h-4 w-4 text-purple-600" />
@@ -302,7 +315,19 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
                 className="flex-1 btn-primary"
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Create Targeted Campaign
+                Create Email Campaign
+              </button>
+              <button
+                onClick={() => {
+                  if (onCreatePopupAd) {
+                    onCreatePopupAd(selectedInsight.product, selectedInsight.segment)
+                  }
+                  setSelectedInsight(null)
+                }}
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Create Popup Ad
               </button>
               <button
                 onClick={() => setSelectedInsight(null)}
