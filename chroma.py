@@ -108,7 +108,6 @@ def get_table_stats() -> None: # Not using rn
         print(f"Error getting stats: {e}")
 
 def connect_supabase() -> bool: 
-    # Test connection
     print("\nConnecting to Supabase...")
 
     headers = {
@@ -141,24 +140,28 @@ def main() -> None:
     # Query first 5 rows
     df = query_rows()
     
-    ## get_table_stats()
-    
     chroma_client = chromadb.Client()
     
     print("Adding category codes to collection...")
+    
     # Clean entries but keep original index:
-    category_codes = {str(index): thing for index, thing in zip(df.index, df['category_code']) if thing != None}
+    category_codes = {
+        str(index): category_code for index, category_code in zip(df.index, df['category_code']) if category_code != None
+    }
+
     collection = chroma_client.create_collection(name="ecomerce_events")
     collection.add(
         ids=list(category_codes.keys()),
         documents=list(category_codes.values())
     )
     
-    print("\nResults:\n")
+    
+    example_query = "smart_phone"
+    print(f"Example results for {example_query}:\n")
     # Random query for testing:
     results = collection.query(
-        query_texts=list(random.choice(list(category_codes.values()))), # Chroma will embed this for you
-        n_results=len(category_codes) # how many results to return
+        query_texts=[example_query],  # list(random.choice(list(category_codes.values()))), # Chroma will embed this
+        n_results=1 # how many results to return
     )
     print(results)
 
