@@ -37,6 +37,7 @@ export default function SegmentsPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [segmentOverview, setSegmentOverview] = useState<any>({})
   const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const [campaignModal, setCampaignModal] = useState<{
     isOpen: boolean
     segmentName?: string
@@ -48,6 +49,7 @@ export default function SegmentsPage() {
   }, [])
 
   const fetchSegmentsData = async () => {
+    setIsLoading(true)
     try {
       // Fetch segments
       const segmentsRes = await fetch('/api/segments/')
@@ -68,6 +70,8 @@ export default function SegmentsPage() {
     } catch (error) {
       console.error('Error fetching segments data:', error)
       setMockData()
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -115,6 +119,7 @@ export default function SegmentsPage() {
         {name: 'Window Shoppers', count: 15623, percentage: 35.4}
       ]
     })
+    setIsLoading(false)
   }
 
   const getSegmentColor = (type: string) => {
@@ -185,19 +190,18 @@ export default function SegmentsPage() {
 
                 <div className="flex items-center space-x-4">
                   <ThemeToggle />
-                  <button className="btn-primary">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Segment
-                  </button>
                 </div>
               </div>
 
               {/* Mobile menu button */}
               <div className="lg:hidden flex items-center space-x-3">
                 <ThemeToggle />
-                <button className="btn-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create
+                <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                    <line x1="4" x2="20" y1="12" y2="12"></line>
+                    <line x1="4" x2="20" y1="6" y2="6"></line>
+                    <line x1="4" x2="20" y1="18" y2="18"></line>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -208,53 +212,71 @@ export default function SegmentsPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Overview Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="metric-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Segments</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                    {segmentOverview.total_segments || 0}
-                  </p>
-                  <div className="stat-badge positive mt-2">
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    12% this month
+            {isLoading ? (
+              // Loading skeletons for stats
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="metric-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3 w-24"></div>
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                   </div>
                 </div>
-                <Target className="h-10 w-10 text-purple-600" />
-              </div>
-            </div>
+              ))
+            ) : (
+              <>
+                <div className="metric-card">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Segments</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {segmentOverview.total_segments || 0}
+                      </p>
+                      <div className="stat-badge positive mt-2">
+                        <ArrowUpRight className="h-3 w-3 mr-1" />
+                        12% this month
+                      </div>
+                    </div>
+                    <Target className="h-10 w-10 text-purple-600" />
+                  </div>
+                </div>
 
-            <div className="metric-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                    {segmentOverview.total_customers?.toLocaleString() || '0'}
-                  </p>
-                  <div className="stat-badge positive mt-2">
-                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                    8% this month
+                <div className="metric-card">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Customers</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {segmentOverview.total_customers?.toLocaleString() || '0'}
+                      </p>
+                      <div className="stat-badge positive mt-2">
+                        <ArrowUpRight className="h-3 w-3 mr-1" />
+                        8% this month
+                      </div>
+                    </div>
+                    <Users className="h-10 w-10 text-purple-600" />
                   </div>
                 </div>
-                <Users className="h-10 w-10 text-purple-600" />
-              </div>
-            </div>
 
-            <div className="metric-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Revenue per Segment</p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                    $142K
-                  </p>
-                  <div className="stat-badge neutral mt-2">
-                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                    2% this month
+                <div className="metric-card">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Revenue per Segment</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        $142K
+                      </p>
+                      <div className="stat-badge neutral mt-2">
+                        <ArrowDownRight className="h-3 w-3 mr-1" />
+                        2% this month
+                      </div>
+                    </div>
+                    <DollarSign className="h-10 w-10 text-purple-600" />
                   </div>
                 </div>
-                <DollarSign className="h-10 w-10 text-purple-600" />
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -267,44 +289,89 @@ export default function SegmentsPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {segments.map((segment) => (
-                    <div
-                      key={segment.id}
-                      onClick={() => {
-                        setSelectedSegment(segment)
-                        fetchSegmentCustomers(segment.id)
-                      }}
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        selectedSegment?.id === segment.id
-                          ? 'border-purple-200 bg-purple-50 dark:border-purple-600 dark:bg-purple-900/20'
-                          : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
+                  {isLoading ? (
+                    // Loading skeletons for segments
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getSegmentColor(segment.type)} flex items-center justify-center text-white text-lg`}>
-                            {getSegmentIcon(segment.type)}
+                          <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 w-24"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 w-32"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20"></div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-white">{segment.name}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{segment.description}</p>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {segment.customer_count.toLocaleString()} customers
-                              </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    segments.map((segment) => (
+                      <div
+                        key={segment.id}
+                        onClick={() => {
+                          setSelectedSegment(segment)
+                          fetchSegmentCustomers(segment.id)
+                        }}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          selectedSegment?.id === segment.id
+                            ? 'border-purple-200 bg-purple-50 dark:border-purple-600 dark:bg-purple-900/20'
+                            : 'border-gray-100 hover:border-gray-200 dark:border-gray-700 dark:hover:border-gray-600'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getSegmentColor(segment.type)} flex items-center justify-center text-white text-lg`}>
+                              {getSegmentIcon(segment.type)}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 dark:text-white">{segment.name}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{segment.description}</p>
+                              <div className="flex items-center space-x-4 mt-2">
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {segment.customer_count.toLocaleString()} customers
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Segment Details */}
             <div className="lg:col-span-2">
-              {selectedSegment ? (
+              {isLoading ? (
+                // Loading skeleton for segment details
+                <div className="space-y-6">
+                  <div className="klaviyo-card">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-16 h-16 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                      <div className="flex-1">
+                        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 w-48"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-64"></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <div key={index} className="text-center">
+                          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto w-16"></div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto w-20"></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="klaviyo-card">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-6 w-48"></div>
+                    <div className="space-y-4">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <div key={index} className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : selectedSegment ? (
                 <div className="space-y-6">
                   {/* Segment Header */}
                   <div className="klaviyo-card">

@@ -35,8 +35,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply theme immediately to prevent any flash
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
+      document.documentElement.style.backgroundColor = '#111827'
     } else {
       document.documentElement.classList.remove('dark')
+      document.documentElement.style.backgroundColor = '#f9fafb'
     }
   }, [theme, mounted])
 

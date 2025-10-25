@@ -298,22 +298,28 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Messages Sent</span>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">{realtimeMetrics.messages_sent_today?.toLocaleString() || '0'}</span>
-                    <div className="stat-badge positive text-xs">+15%</div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl font-bold text-gray-900 dark:text-white">{realtimeMetrics.messages_sent_today?.toLocaleString() || '0'}</span>
+                      <div className="stat-badge positive text-xs">+15%</div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Revenue</span>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-green-600">${realtimeMetrics.revenue_today?.toLocaleString() || '0'}</span>
-                    <div className="stat-badge positive text-xs">+8%</div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl font-bold text-green-600">${realtimeMetrics.revenue_today?.toLocaleString() || '0'}</span>
+                      <div className="stat-badge positive text-xs">+8%</div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 dark:text-gray-400">Conversions</span>
                   <div className="text-right">
-                    <span className="text-xl font-bold text-purple-600">{realtimeMetrics.recent_conversions || 0}</span>
-                    <div className="stat-badge neutral text-xs">±0%</div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl font-bold text-purple-600">{realtimeMetrics.recent_conversions || 0}</span>
+                      <div className="stat-badge neutral text-xs">±0%</div>
+                    </div>
                   </div>
                 </div>
 
