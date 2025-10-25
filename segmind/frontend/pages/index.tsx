@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2 } from 'lucide-react'
+import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2, BarChart2, Clock, Dot } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
 import CampaignModal from '../components/CampaignModal'
 
@@ -27,6 +27,7 @@ interface ChannelData {
 }
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<'analytics' | 'trends' | 'clusters'>('analytics')
   const [segmentData, setSegmentData] = useState<SegmentData[]>([])
   const [channelData, setChannelData] = useState<ChannelData[]>([])
   const [realtimeMetrics, setRealtimeMetrics] = useState<any>({})
@@ -37,6 +38,68 @@ export default function Dashboard() {
     segmentName?: string
     productName?: string
   }>({ isOpen: false })
+
+  // Mock data for OCR campaign analysis
+  const [pastCampaigns] = useState([
+    {
+      product: "iPhone 15 Pro",
+      image_description: "Picture of a woman holding iPhone with city background",
+      performance: "High conversion rate",
+      campaign_type: "Email",
+      date: "2024-01-10",
+      metrics: { conversion_rate: 28.4, clicks: 1250, opens: 4500 }
+    },
+    {
+      product: "MacBook Pro",
+      image_description: "Professional setup with MacBook on minimalist desk",
+      performance: "Medium conversion rate",
+      campaign_type: "Popup",
+      date: "2024-01-08",
+      metrics: { conversion_rate: 15.2, clicks: 890, opens: 3200 }
+    },
+    {
+      product: "AirPods Max",
+      image_description: "Person wearing headphones in studio environment",
+      performance: "Low conversion rate",
+      campaign_type: "Email",
+      date: "2024-01-05",
+      metrics: { conversion_rate: 8.7, clicks: 420, opens: 2100 }
+    }
+  ])
+
+  // Mock data for product clustering
+  const [productClusters] = useState([
+    {
+      cluster_name: "Premium Smartphones",
+      products: ["iPhone 15 Pro", "iPhone 15 Pro Max", "Samsung Galaxy S24 Ultra"],
+      center: { x: 25, y: 80 },
+      color: "bg-blue-500"
+    },
+    {
+      cluster_name: "Budget Smartphones",
+      products: ["iPhone SE", "Samsung Galaxy A54", "Google Pixel 7a"],
+      center: { x: 15, y: 30 },
+      color: "bg-green-500"
+    },
+    {
+      cluster_name: "Professional Laptops",
+      products: ["MacBook Pro M3", "MacBook Air M2", "Dell XPS 13"],
+      center: { x: 70, y: 85 },
+      color: "bg-purple-500"
+    },
+    {
+      cluster_name: "Audio Accessories",
+      products: ["AirPods Pro", "AirPods Max", "Sony WH-1000XM5"],
+      center: { x: 45, y: 60 },
+      color: "bg-orange-500"
+    },
+    {
+      cluster_name: "Wearables",
+      products: ["Apple Watch Ultra", "Apple Watch Series 9", "Samsung Galaxy Watch"],
+      center: { x: 60, y: 40 },
+      color: "bg-pink-500"
+    }
+  ])
 
   useEffect(() => {
     // Fetch data from API
@@ -185,9 +248,52 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {/* Sub-Tab Navigation */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'analytics'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                <BarChart2 className="h-4 w-4 mr-2 inline" />
+                Analytics
+              </button>
+              <button
+                onClick={() => setActiveTab('trends')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'trends'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                <Clock className="h-4 w-4 mr-2 inline" />
+                Past Trends
+              </button>
+              <button
+                onClick={() => setActiveTab('clusters')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'clusters'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                <Dot className="h-4 w-4 mr-2 inline" />
+                Product Clusters
+              </button>
+            </nav>
+          </div>
+        </div>
+
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Key Metrics */}
+          {activeTab === 'analytics' && (
+            <>
+              {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="metric-card">
               <div className="flex items-center justify-between">
@@ -346,6 +452,166 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+            </>
+          )}
+
+          {activeTab === 'trends' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Past Campaign Trends</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">OCR analysis of past campaigns and their performance</p>
+                </div>
+                <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
+                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">🔍 OCR Powered</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {pastCampaigns.map((campaign, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{campaign.product}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{campaign.date}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        campaign.campaign_type === 'Email'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                      }`}>
+                        {campaign.campaign_type}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{campaign.image_description}"</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Performance</span>
+                        <span className={`text-sm font-medium ${
+                          campaign.performance.includes('High') ? 'text-green-600' :
+                          campaign.performance.includes('Medium') ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {campaign.performance}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded p-2">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{campaign.metrics.conversion_rate}%</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">CVR</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded p-2">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{campaign.metrics.clicks}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Clicks</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded p-2">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{campaign.metrics.opens}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Opens</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          )}
+
+          {activeTab === 'clusters' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product Clusters</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">Visualization of product similarity and clustering patterns</p>
+                </div>
+                <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full">
+                  <span className="text-sm text-purple-800 dark:text-purple-200 font-medium">🔬 ML Clustering</span>
+                </div>
+              </div>
+
+              {/* Cluster Visualization */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Similarity Map</h3>
+                <div className="relative h-96 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  {productClusters.map((cluster, index) => (
+                    <div
+                      key={index}
+                      className={`absolute w-16 h-16 rounded-full ${cluster.color} opacity-70 flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:opacity-100 transition-opacity`}
+                      style={{
+                        left: `${cluster.center.x}%`,
+                        top: `${cluster.center.y}%`,
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                      title={`${cluster.cluster_name}: ${cluster.products.join(', ')}`}
+                    >
+                      {cluster.products.length}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                  Hover over clusters to see product details. Proximity indicates similarity.
+                </p>
+              </div>
+
+              {/* Cluster Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {productClusters.map((cluster, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className={`w-6 h-6 rounded-full ${cluster.color}`}></div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{cluster.cluster_name}</h3>
+                    </div>
+
+                    <div className="space-y-2">
+                      {cluster.products.map((product, productIndex) => (
+                        <div key={productIndex} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <span className="text-sm text-gray-900 dark:text-white">{product}</span>
+                          <div className="flex items-center space-x-1">
+                            <div className={`w-2 h-2 rounded-full ${cluster.color}`}></div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {Math.floor(Math.random() * 20 + 80)}% similarity
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        <strong>Cluster Insights:</strong> Products in this cluster share similar features, pricing, and customer appeal patterns.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-6 border border-green-200 dark:border-green-800">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Clustering Insights</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Strong Clusters</h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• Premium Smartphones (iPhone 15 Pro, Galaxy S24 Ultra)</li>
+                      <li>• Professional Laptops (MacBook Pro, Dell XPS)</li>
+                      <li>• Audio Accessories (AirPods, Sony headphones)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Cross-sell Opportunities</h4>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• iPhone buyers → AirPods, Apple Watch</li>
+                      <li>• MacBook buyers → iPad Pro, peripherals</li>
+                      <li>• Premium phone buyers → Premium accessories</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         </main>
 

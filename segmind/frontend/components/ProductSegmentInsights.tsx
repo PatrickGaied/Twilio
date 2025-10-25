@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { TrendingUp, Users, ShoppingCart, Target, Lightbulb, Zap, ArrowRight } from 'lucide-react'
+import { useRouter } from 'next/router'
+import { TrendingUp, Users, ShoppingCart, Target, Lightbulb, Zap, ArrowRight, BarChart3 } from 'lucide-react'
+import QuickInsightAnalysis from './QuickInsightAnalysis'
 
 interface ProductInsight {
   product: string
@@ -17,7 +19,9 @@ interface ProductSegmentInsightsProps {
 }
 
 export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegmentInsightsProps) {
+  const router = useRouter()
   const [selectedInsight, setSelectedInsight] = useState<ProductInsight | null>(null)
+  const [showAnalysis, setShowAnalysis] = useState<ProductInsight | null>(null)
 
   // Mock insights data showing product-segment correlations
   const insights: ProductInsight[] = [
@@ -111,8 +115,7 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
         {insights.map((insight, index) => (
           <div
             key={index}
-            onClick={() => setSelectedInsight(insight)}
-            className="group p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-300 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-all duration-200 cursor-pointer"
+            className="group p-4 border border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-300 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition-all duration-200"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -158,18 +161,30 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
               </div>
 
               <div className="flex flex-col items-end space-y-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (onCreateCampaign) {
-                      onCreateCampaign(insight.product, insight.segment)
-                    }
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1 opacity-0 group-hover:opacity-100"
-                >
-                  <Zap className="h-3 w-3" />
-                  <span>Create Campaign</span>
-                </button>
+                <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowAnalysis(insight)
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <BarChart3 className="h-3 w-3" />
+                    <span>Analyze</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (onCreateCampaign) {
+                        onCreateCampaign(insight.product, insight.segment)
+                      }
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+                  >
+                    <Zap className="h-3 w-3" />
+                    <span>Campaign</span>
+                  </button>
+                </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <ArrowRight className="h-4 w-4 text-purple-600" />
                 </div>
@@ -298,6 +313,21 @@ export default function ProductSegmentInsights({ onCreateCampaign }: ProductSegm
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Insight Analysis Modal */}
+      {showAnalysis && (
+        <QuickInsightAnalysis
+          insight={showAnalysis}
+          isOpen={!!showAnalysis}
+          onClose={() => setShowAnalysis(null)}
+          onCreateCampaign={(product, segment) => {
+            if (onCreateCampaign) {
+              onCreateCampaign(product, segment)
+            }
+            setShowAnalysis(null)
+          }}
+        />
       )}
     </div>
   )
