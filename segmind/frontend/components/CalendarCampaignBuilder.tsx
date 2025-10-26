@@ -153,13 +153,13 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
         }
       }
 
-      // Fallback if API fails
-      return `Focus on ${contextData.audience} with discovery-focused content for ${product.name}. Use studio lighting backgrounds for better conversion rates.`
+      // Fallback if API fails - keep it simple
+      return ''
 
     } catch (error) {
       console.error('Error generating smart prompt:', error)
-      // Fallback prompt
-      return `Focus on ${insights.find(i => i.type === 'audience')?.audience || 'Window Shoppers'} with discovery-focused content for ${product.name}.`
+      // Return empty string to let user write their own
+      return ''
     }
   }
 
@@ -251,9 +251,11 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
     ]
     setSimilarProducts(similarProds)
 
-    // Auto-generate smart initial prompt based on analytics
-    const smartPrompt = await generateSmartPrompt(product, insights, similarProds)
-    setCustomPrompt(smartPrompt)
+    // Only auto-generate smart prompt if user hasn't already entered their own
+    if (!customPrompt || customPrompt.trim() === '') {
+      const smartPrompt = await generateSmartPrompt(product, insights, similarProds)
+      setCustomPrompt(smartPrompt)
+    }
 
     // Generate strategy recommendation
     setStrategyRecommendation({

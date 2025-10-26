@@ -134,17 +134,21 @@ IMPORTANT: The imagePrompt should be a detailed description that reflects the ca
                     'role': 'user',
                     'content': f'''Generate campaign cards for:
 Product: {product.get('name', 'Unknown Product')}
-Strategy: {strategy.get('strategy', 'Standard marketing strategy')}
 Primary Audience: {strategy.get('primaryAudience', 'General audience')}
-Custom Prompt: {strategy.get('customPrompt', '')}
+
+IMPORTANT USER REQUEST: {strategy.get('customPrompt', '')}
 
 Weekly Schedule:
 {schedule_text}
 
-Each campaign should have:
-1. Compelling subject lines
-2. Engaging email content
-3. DETAILED image prompts that match the campaign message (e.g., if subject mentions specific features or activities, the image prompt should describe showing those exact elements)'''
+CRITICAL INSTRUCTIONS:
+1. Follow the user's custom prompt EXACTLY - if they ask for "15% discount", make it about 15% discount
+2. DO NOT change discount percentages or add generic product introductions
+3. Target the specified audience (e.g., window shoppers need deals and urgency, not generic features)
+4. Generate contextual image prompts that match the actual campaign content
+5. If user mentions a specific discount or offer, EVERY campaign should include that offer
+
+Remember: Window shoppers respond to deals, discounts, and urgency - not generic product descriptions!'''
                 }
             ],
             'temperature': 0.7,
@@ -181,11 +185,29 @@ Each campaign should have:
         # TEMP VARIABLE: Initialize list to collect campaign cards
         campaign_cards = []
 
+        # Check if user specified a discount in their custom prompt
+        custom_prompt = strategy.get('customPrompt', '')
+        discount_match = re.search(r'(\d+)%', custom_prompt)
+        has_discount = discount_match is not None
+        discount_percent = discount_match.group(1) if discount_match else None
+
         # TEMP VARIABLE: Loop through schedule items with index
         for index, schedule in enumerate(weekly_schedule):
-            # Generate subject first so we can use it for image prompt
-            subject = self._generate_subject(product.get('name', 'Product'),
-                                           schedule['type'], schedule['audience'])
+            # Generate subject based on whether there's a discount
+            if has_discount:
+                subject = self._generate_discount_subject(product.get('name', 'Product'),
+                                                        schedule['type'], discount_percent)
+            else:
+                subject = self._generate_subject(product.get('name', 'Product'),
+                                               schedule['type'], schedule['audience'])
+
+            # Generate email content based on discount
+            if has_discount:
+                email_content = self._generate_discount_email(product.get('name', 'Product'),
+                                                            schedule['type'], discount_percent)
+            else:
+                email_content = self._generate_email_content(product.get('name', 'Product'),
+                                                           schedule['type'], schedule['audience'])
 
             # TEMP VARIABLE: Build individual campaign card
             card = {
@@ -197,9 +219,8 @@ Each campaign should have:
                 'theme': self._get_theme_for_campaign(schedule['type']),
                 'subject': subject,
                 'preview': f"{schedule['day']} {schedule['time']}: {schedule['type']}",
-                'prompt': f"{schedule['type']} email for {schedule['audience']} promoting {product.get('name', 'Product')}",
-                'emailContent': self._generate_email_content(product.get('name', 'Product'),
-                                                           schedule['type'], schedule['audience']),
+                'prompt': custom_prompt if custom_prompt else f"{schedule['type']} email for {schedule['audience']} promoting {product.get('name', 'Product')}",
+                'emailContent': email_content,
                 'imagePrompt': self._generate_image_prompt(product.get('name', 'Product'),
                                                          schedule['type'], subject, schedule['audience']),
                 'status': 'pending'
@@ -221,6 +242,74 @@ Each campaign should have:
             'Educational Recap': 'Professional & Informative'
         }
         return themes.get(campaign_type, 'Engaging & Professional')
+
+    def _generate_discount_subject(self, product_name: str, campaign_type: str, discount: str) -> str:
+        """Generate discount-specific subject lines."""
+        subjects = {
+            'Primary Campaign': [
+                f"🔥 {discount}% OFF {product_name} - Limited Time!",
+                f"Exclusive: {product_name} at {discount}% Off - Act Now!",
+                f"Save {discount}% on {product_name} Today Only!"
+            ],
+            'Follow-up': [
+                f"⏰ Your {discount}% discount on {product_name} expires soon!",
+                f"Last Chance: {discount}% off {product_name} ending!",
+                f"Don't Miss Out - {discount}% off {product_name} almost gone!"
+            ],
+            'Premium Drop': [
+                f"VIP Only: {discount}% off {product_name}",
+                f"Exclusive {discount}% discount on {product_name} for members",
+                f"Premium Deal: Save {discount}% on {product_name}"
+            ],
+            'Weekly Recap': [
+                f"Still Available: {discount}% off {product_name}",
+                f"Weekend Special: {discount}% discount on {product_name}",
+                f"Don't forget: {discount}% off {product_name} this week"
+            ]
+        }
+        type_subjects = subjects.get(campaign_type, subjects['Primary Campaign'])
+        return random.choice(type_subjects)
+
+    def _generate_discount_email(self, product_name: str, campaign_type: str, discount: str) -> str:
+        """Generate discount-focused email content."""
+        if campaign_type == 'Primary Campaign':
+            return f"""Hi {{{{first_name}}}},
+
+🎉 SPECIAL OFFER: Save {discount}% on the {product_name}!
+
+This is your chance to get the {product_name} at an incredible {discount}% discount.
+Perfect for smart shoppers looking for the best deals!
+
+✨ Why this deal is amazing:
+• Save {discount}% off regular price
+• Limited time offer
+• Free shipping included
+• 30-day money-back guarantee
+
+[GRAB YOUR {discount}% DISCOUNT NOW]
+
+Hurry - this offer won't last long!
+
+Best regards,
+The Segmind Team"""
+        elif campaign_type == 'Follow-up':
+            return f"""Hi {{{{first_name}}}},
+
+⏰ TIME IS RUNNING OUT!
+
+Your exclusive {discount}% discount on the {product_name} is about to expire!
+
+Don't let this amazing deal slip away. You've shown interest in the {product_name},
+and we don't want you to miss out on saving {discount}%.
+
+[CLAIM YOUR {discount}% DISCOUNT]
+
+This offer expires soon - act now!
+
+Best regards,
+The Segmind Team"""
+        else:
+            return self._generate_email_content(product_name, campaign_type, "Window Shoppers")
 
     def _generate_subject(self, product_name: str, campaign_type: str, audience: str) -> str:
         """Generate email subject line."""
