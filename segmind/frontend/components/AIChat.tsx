@@ -18,7 +18,7 @@ export default function AIChat({ pageData, context = "customer segments and prod
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: `Hi! I can help you analyze your ${context}. Ask me anything about the data you see on this page.`,
+      content: `Hi! I'm your AI data analyst. I can help you:\n\n📊 Analyze customer behavior and trends\n🎯 Identify your best-performing segments\n📧 Create targeted email campaigns\n💡 Generate popup ads and content\n📈 Optimize your marketing strategy\n\nWhat would you like to explore?`,
       sender: 'ai',
       timestamp: new Date()
     }
@@ -105,6 +105,53 @@ export default function AIChat({ pageData, context = "customer segments and prod
     })
   }
 
+  const getQuickExamples = () => {
+    // Context-aware examples based on what page the user is on
+    const baseExamples = [
+      "What do my loyal customers buy most?",
+      "Which products have the highest conversion rates?",
+      "Create an email campaign for high-value customers",
+      "Which customer segment should I target for iPhone sales?",
+      "Show me performance trends for the last month",
+      "Generate a popup ad for Samsung Galaxy users"
+    ]
+
+    if (context?.includes('segments')) {
+      return [
+        "What do my loyal customers buy most?",
+        "Which segment converts best for premium products?",
+        "Create a campaign targeting high converters",
+        "How do new visitors behave vs returning customers?",
+        "Which products should I promote to each segment?",
+        "Generate email content for window shoppers"
+      ]
+    }
+
+    if (context?.includes('dashboard')) {
+      return [
+        "What are my top performing campaigns this month?",
+        "Which channels drive the most revenue?",
+        "Create a campaign for my best-selling product",
+        "How can I improve my email open rates?",
+        "What time of day do customers engage most?",
+        "Generate a popup for cart abandoners"
+      ]
+    }
+
+    if (context?.includes('breakdown') || context?.includes('insights')) {
+      return [
+        "Why is iPhone 15 Pro performing so well?",
+        "What makes high converters different?",
+        "Create content targeting creative professionals",
+        "Which products pair well together?",
+        "How can I cross-sell more effectively?",
+        "Generate a bundle promotion campaign"
+      ]
+    }
+
+    return baseExamples
+  }
+
   return (
     <>
       {/* Chat Toggle Button */}
@@ -125,8 +172,8 @@ export default function AIChat({ pageData, context = "customer segments and prod
                 <Bot className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Analyze your data</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">AI Data Analyst</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Ask questions about your data or request campaign creation</p>
               </div>
             </div>
             <button
@@ -192,6 +239,26 @@ export default function AIChat({ pageData, context = "customer segments and prod
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Quick Examples */}
+          {messages.length === 1 && (
+            <div className="px-4 pb-2">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                Quick examples:
+              </p>
+              <div className="space-y-2">
+                {getQuickExamples().map((example, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputMessage(example)}
+                    className="w-full text-left p-2 text-xs bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-2">
@@ -200,7 +267,7 @@ export default function AIChat({ pageData, context = "customer segments and prod
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about your data..."
+                placeholder="Ask questions about your data or request campaign creation..."
                 disabled={isLoading}
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />

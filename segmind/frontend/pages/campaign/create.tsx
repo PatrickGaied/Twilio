@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { ArrowLeft, Target, Mail, Plus, Check, Zap, Wand2, Calendar, Users, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Target, Mail, Plus, Check, Zap, Wand2, Calendar, Users, TrendingUp, ArrowRight } from 'lucide-react'
 import ThemeToggle from '../../components/ThemeToggle'
 
 interface Product {
@@ -38,6 +38,109 @@ export default function CreateCampaignPage() {
   const [selectedTone, setSelectedTone] = useState<string>('')
   const [campaignGoal, setCampaignGoal] = useState<string>('')
   const [step, setStep] = useState<'brand' | 'products' | 'tone' | 'review'>('brand')
+
+  // Product-audience affinity data based on query params
+  const getAffinityData = () => {
+    if (!segment || !initialProduct) return null
+
+    // Mock affinity data - in real app this would come from API
+    const affinityMap: { [key: string]: { [key: string]: { affinity: number, conversion: number, revenue: number } } } = {
+      'iPhone 15 Pro': {
+        'High Converters': { affinity: 92, conversion: 28.4, revenue: 488000 },
+        'Loyal Customers': { affinity: 78, conversion: 22.1, revenue: 340000 },
+        'Window Shoppers': { affinity: 45, conversion: 12.3, revenue: 156000 }
+      },
+      'Samsung Galaxy S24': {
+        'Loyal Customers': { affinity: 87, conversion: 23.1, revenue: 298000 },
+        'High Converters': { affinity: 72, conversion: 19.8, revenue: 267000 },
+        'Window Shoppers': { affinity: 58, conversion: 15.6, revenue: 198000 }
+      },
+      'MacBook Air M3': {
+        'High Converters': { affinity: 89, conversion: 31.2, revenue: 654000 },
+        'Loyal Customers': { affinity: 76, conversion: 24.7, revenue: 432000 }
+      }
+    }
+
+    return affinityMap[initialProduct as string]?.[segment as string] || null
+  }
+
+  const affinityData = getAffinityData()
+
+  // Get similar high-performing products
+  const getSimilarProducts = () => {
+    const similarProducts = [
+      { name: 'iPhone 15 Pro Max', similarity: 94, conversion: 26.8, revenue: 523000 },
+      { name: 'MacBook Pro M3', similarity: 89, conversion: 31.2, revenue: 654000 },
+      { name: 'iPhone 14 Pro', similarity: 91, conversion: 24.1, revenue: 399000 }
+    ]
+    return similarProducts
+  }
+
+  // Get underperforming products that could benefit
+  const getUnderperformingProducts = () => {
+    const underperforming = [
+      { name: 'AirPods Max', similarity: 79, conversion: 18.7, revenue: 187000 },
+      { name: 'Apple Watch SE', similarity: 76, conversion: 16.2, revenue: 146000 },
+      { name: 'iPad Air', similarity: 73, conversion: 15.8, revenue: 123000 }
+    ]
+    return underperforming
+  }
+
+  // Generate AI campaign calendar based on successful trends
+  const generateAICampaignCalendar = () => {
+    if (!initialProduct) return []
+
+    // Base schedule on what works across segments for this product
+    const schedules = [
+      {
+        type: 'Email',
+        title: `${initialProduct} - Product Spotlight`,
+        description: 'Launch announcement to all segments',
+        segments: ['High Converters', 'Loyal Customers'],
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        time: '10:00 AM',
+        priority: 'high',
+        color: 'purple'
+      },
+      {
+        type: 'Push',
+        title: `Flash Sale: ${initialProduct}`,
+        description: 'Limited time offer to drive urgency',
+        segments: ['Window Shoppers', 'Cart Abandoners'],
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        time: '6:00 PM',
+        priority: 'high',
+        color: 'red'
+      },
+      {
+        type: 'Email',
+        title: `Bundle Deal: ${initialProduct} + Accessories`,
+        description: 'Cross-sell complementary products',
+        segments: ['High Converters', 'Loyal Customers'],
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        time: '2:00 PM',
+        priority: 'medium',
+        color: 'blue'
+      },
+      {
+        type: 'SMS',
+        title: `Last Chance: ${initialProduct}`,
+        description: 'Final push to remaining segments',
+        segments: ['All Segments'],
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        time: '8:00 PM',
+        priority: 'high',
+        color: 'orange'
+      }
+    ]
+
+    return schedules
+  }
+
+  const handleCreateUnderperformingCampaign = (productName: string) => {
+    // Route to create campaign for underperforming product
+    router.push(`/campaign/create?segment=${segment}&product=${encodeURIComponent(productName)}&type=clearance`)
+  }
 
   const [brands] = useState([
     {
@@ -330,17 +433,30 @@ export default function CreateCampaignPage() {
     router.push('/campaigns')
   }
 
-  // Auto-select initial product if provided
+  // Auto-select initial product and brand if provided
   useEffect(() => {
     if (initialProduct && typeof initialProduct === 'string') {
-      const matchingProduct = products.find(p =>
+      // Auto-select brand based on product
+      const productName = initialProduct.toLowerCase()
+      if (productName.includes('iphone') || productName.includes('macbook') || productName.includes('ipad') || productName.includes('airpods')) {
+        setSelectedBrands(['apple'])
+      } else if (productName.includes('samsung') || productName.includes('galaxy')) {
+        setSelectedBrands(['samsung'])
+      }
+
+      const matchingProduct = allProducts.find(p =>
         p.name.toLowerCase().includes(initialProduct.toLowerCase())
       )
       if (matchingProduct && !selectedProducts.includes(matchingProduct.id)) {
         setSelectedProducts([matchingProduct.id])
       }
+
+      // Skip to tone selection when coming from insights
+      if (segment && initialProduct) {
+        setStep('tone')
+      }
     }
-  }, [initialProduct, products])
+  }, [initialProduct, segment])
 
   return (
     <>
@@ -375,59 +491,299 @@ export default function CreateCampaignPage() {
           </div>
         </header>
 
-        {/* Progress Steps */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center space-x-6">
-            <div className={`flex items-center space-x-2 ${step === 'brand' ? 'text-purple-600' : selectedBrands.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'brand' ? 'bg-purple-600 text-white' :
-                selectedBrands.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedBrands.length > 0 && step !== 'brand' ? <Check className="h-4 w-4" /> : '1'}
+        {/* Product-Audience Affinity Section */}
+        {affinityData && (
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                      {initialProduct} → {segment}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Why this combination works</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600 mb-1">{affinityData.affinity}%</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Affinity Score</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600 mb-1">{affinityData.conversion}%</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Conversion</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">${(affinityData.revenue / 1000).toFixed(0)}K</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
+                  </div>
+                </div>
+
+                {/* Interactive Campaign Builder */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                  <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200 flex items-center mb-3">
+                    🚀 Quick Campaign Builder
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Email Campaign */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                          <Mail className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Email Campaign</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Create email series for {initialProduct}</p>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                        • Subject line suggestions
+                        • Multi-segment targeting
+                        • Scheduled delivery
+                      </div>
+                    </div>
+
+                    {/* Push Campaign */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-orange-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+                          <Zap className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Push Campaign</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Urgent notifications for {initialProduct}</p>
+                      <div className="text-xs text-orange-600 dark:text-orange-400">
+                        • Flash sale alerts
+                        • Limited time offers
+                        • High conversion focus
+                      </div>
+                    </div>
+
+                    {/* Multi-Channel */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <Target className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Multi-Channel</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Email + Push + SMS sequence</p>
+                      <div className="text-xs text-blue-600 dark:text-blue-400">
+                        • 7-day campaign calendar
+                        • All segments covered
+                        • Maximum reach
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Similar Products & Underperformers */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                  {/* High Performers */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">High Performers (Similar Products)</h3>
+                    <div className="space-y-2">
+                      {getSimilarProducts().map((product, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</p>
+                            <p className="text-xs text-green-600 dark:text-green-400">{product.similarity}% similar</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{product.conversion}%</p>
+                            <p className="text-xs text-green-600">${(product.revenue / 1000).toFixed(0)}K</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Under Performers */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Under Performers (Could Benefit)</h3>
+                    <div className="space-y-2">
+                      {getUnderperformingProducts().map((product, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleCreateUnderperformingCampaign(product.name)}
+                          className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</p>
+                            <p className="text-xs text-orange-600 dark:text-orange-400">{product.similarity}% similar • Click to create clearance campaign</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{product.conversion}%</p>
+                            <p className="text-xs text-orange-600">${(product.revenue / 1000).toFixed(0)}K</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Campaign Calendar */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                        🤖 Multi-Segment Campaign Calendar
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Sell {initialProduct} across all segments using proven trends</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {generateAICampaignCalendar().map((schedule, index) => (
+                      <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${
+                              schedule.color === 'purple' ? 'bg-purple-600' :
+                              schedule.color === 'red' ? 'bg-red-600' :
+                              schedule.color === 'blue' ? 'bg-blue-600' :
+                              schedule.color === 'orange' ? 'bg-orange-600' : 'bg-gray-600'
+                            }`}>
+                              {schedule.type.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">{schedule.title}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{schedule.type}</p>
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            schedule.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            schedule.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {schedule.priority}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{schedule.description}</p>
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Segments:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {schedule.segments.map((seg, segIndex) => (
+                              <span key={segIndex} className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full text-gray-700 dark:text-gray-300">
+                                {seg}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span>{schedule.date.toLocaleDateString()}</span>
+                          <span>{schedule.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      💡 <strong>Strategy:</strong> Start with high-value segments (Day 1), create urgency for deal-seekers (Day 3), then cross-sell accessories (Day 5), finish with broad push to everyone (Day 7). This maximizes revenue across all customer types.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <span className="font-medium">Select Brands</span>
-            </div>
-
-            <div className={`h-0.5 w-12 ${selectedBrands.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
-
-            <div className={`flex items-center space-x-2 ${step === 'products' ? 'text-purple-600' : selectedProducts.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'products' ? 'bg-purple-600 text-white' :
-                selectedProducts.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedProducts.length > 0 && step !== 'products' ? <Check className="h-4 w-4" /> : '2'}
-              </div>
-              <span className="font-medium">Select Products</span>
-            </div>
-
-            <div className={`h-0.5 w-12 ${selectedProducts.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
-
-            <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'tone' ? 'bg-purple-600 text-white' :
-                selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '3'}
-              </div>
-              <span className="font-medium">Choose Tone</span>
-            </div>
-
-            <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
-
-            <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                4
-              </div>
-              <span className="font-medium">Review & Create</span>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Progress Steps - Hide when coming from insights */}
+        {!affinityData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-center space-x-6">
+              <div className={`flex items-center space-x-2 ${step === 'brand' ? 'text-purple-600' : selectedBrands.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'brand' ? 'bg-purple-600 text-white' :
+                  selectedBrands.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedBrands.length > 0 && step !== 'brand' ? <Check className="h-4 w-4" /> : '1'}
+                </div>
+                <span className="font-medium">Select Brands</span>
+              </div>
+
+              <div className={`h-0.5 w-12 ${selectedBrands.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+
+              <div className={`flex items-center space-x-2 ${step === 'products' ? 'text-purple-600' : selectedProducts.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'products' ? 'bg-purple-600 text-white' :
+                  selectedProducts.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedProducts.length > 0 && step !== 'products' ? <Check className="h-4 w-4" /> : '2'}
+                </div>
+                <span className="font-medium">Select Products</span>
+              </div>
+
+              <div className={`h-0.5 w-12 ${selectedProducts.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+
+              <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'tone' ? 'bg-purple-600 text-white' :
+                  selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '3'}
+                </div>
+                <span className="font-medium">Choose Tone</span>
+              </div>
+
+              <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+
+              <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  4
+                </div>
+                <span className="font-medium">Review & Create</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Simplified Steps for Insight-based campaigns */}
+        {affinityData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-center space-x-6">
+              <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'tone' ? 'bg-purple-600 text-white' :
+                  selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '1'}
+                </div>
+                <span className="font-medium">Choose Tone</span>
+              </div>
+
+              <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+
+              <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  2
+                </div>
+                <span className="font-medium">Review & Create</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          {step === 'brand' && (
+          {step === 'brand' && !affinityData && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -532,7 +888,7 @@ export default function CreateCampaignPage() {
             </div>
           )}
 
-          {step === 'products' && (
+          {step === 'products' && !affinityData && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>

@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2, BarChart2, Clock, Dot } from 'lucide-react'
+import { Users, MessageCircle, TrendingUp, DollarSign, Activity, Target, Plus, Menu, X, Wand2, BarChart2, Clock, Dot, Zap, Search, Network, GitBranch, ShoppingCart, Mail, Calendar } from 'lucide-react'
 import ThemeToggle from '../components/ThemeToggle'
 import CampaignModal from '../components/CampaignModal'
+import PopupAdCreator from '../components/PopupAdCreator'
+import AudienceChat from '../components/AudienceChat'
+import CalendarCampaignBuilder from '../components/CalendarCampaignBuilder'
+import PopupCampaignBuilder from '../components/PopupCampaignBuilder'
 
 // Create a client-side only chart component
 const DashboardCharts = dynamic(() => import('../components/DashboardCharts'), {
@@ -27,17 +31,104 @@ interface ChannelData {
 }
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'trends' | 'clusters'>('analytics')
+  const [activeMainTab, setActiveMainTab] = useState<'dashboard' | 'segments' | 'breakdown'>('dashboard')
+  const [activeSubTab, setActiveSubTab] = useState<'analytics' | 'trends' | 'clusters'>('analytics')
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
+  const [selectedCluster, setSelectedCluster] = useState<string | null>(null)
+
+  // State for pan and zoom
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [lastPan, setLastPan] = useState({ x: 0, y: 0 })
+
+  // Pan and zoom handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      setIsDragging(true)
+      setDragStart({ x: e.clientX, y: e.clientY })
+      setLastPan({ x: transform.x, y: transform.y })
+      e.preventDefault()
+    }
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      const deltaX = e.clientX - dragStart.x
+      const deltaY = e.clientY - dragStart.y
+      setTransform(prev => ({
+        ...prev,
+        x: lastPan.x + deltaX,
+        y: lastPan.y + deltaY
+      }))
+      e.preventDefault()
+    }
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const container = e.currentTarget.getBoundingClientRect()
+    const mouseX = e.clientX - container.left
+    const mouseY = e.clientY - container.top
+
+    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1
+    const newScale = Math.min(Math.max(transform.scale * scaleFactor, 0.5), 3)
+
+    // Calculate new position to zoom towards mouse
+    const scaleRatio = newScale / transform.scale
+    const newX = mouseX - (mouseX - transform.x) * scaleRatio
+    const newY = mouseY - (mouseY - transform.y) * scaleRatio
+
+    setTransform({
+      x: newX,
+      y: newY,
+      scale: newScale
+    })
+  }
+
+  const resetZoom = () => {
+    setTransform({ x: 0, y: 0, scale: 1 })
+  }
+
+
   const [segmentData, setSegmentData] = useState<SegmentData[]>([])
   const [channelData, setChannelData] = useState<ChannelData[]>([])
   const [realtimeMetrics, setRealtimeMetrics] = useState<any>({})
   const [overview, setOverview] = useState<any>({})
+
+  // Breakdown page data
+  const [topProducts, setTopProducts] = useState<any[]>([])
+  const [breakdownSegmentData, setBreakdownSegmentData] = useState<any[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [campaignModal, setCampaignModal] = useState<{
     isOpen: boolean
     segmentName?: string
     productName?: string
   }>({ isOpen: false })
+  const [popupAdModal, setPopupAdModal] = useState<{
+    isOpen: boolean
+    segmentName?: string
+    productName?: string
+  }>({ isOpen: false })
+
+  // Campaign Type Selection State (for segments tab)
+  const [showCampaignSelection, setShowCampaignSelection] = useState(true)
+  const [selectedCampaignType, setSelectedCampaignType] = useState<'calendar' | 'popup' | null>(null)
+
+  // Campaign Type Selection Handlers
+  const handleCampaignTypeSelection = (type: 'calendar' | 'popup') => {
+    setSelectedCampaignType(type)
+    setShowCampaignSelection(false)
+  }
+
+  const handleBackToCampaignSelection = () => {
+    setShowCampaignSelection(true)
+    setSelectedCampaignType(null)
+  }
 
   // Mock data for OCR campaign analysis
   const [pastCampaigns] = useState([
@@ -170,6 +261,69 @@ export default function Dashboard() {
         engagement_rate_today: 26.3
       }
     })
+
+    // Breakdown page mock data
+    setBreakdownSegmentData([
+      { name: 'High Converters', count: 2847, percentage: 6.5 },
+      { name: 'Window Shoppers', count: 15623, percentage: 35.4 },
+      { name: 'Cart Abandoners', count: 8941, percentage: 20.3 },
+      { name: 'Loyal Customers', count: 4256, percentage: 9.7 },
+      { name: 'At Risk', count: 12387, percentage: 28.1 }
+    ])
+
+    setTopProducts([
+      {
+        product_id: "prod_1001",
+        name: "iPhone 15 Pro",
+        category: "electronics.smartphone",
+        brand: "apple",
+        total_sales: 2847,
+        revenue: 2567340.00,
+        avg_price: 1199.99,
+        top_segment: "High Converters",
+        segment_distribution: {
+          "high_converters": 45.2,
+          "loyal_customers": 32.1,
+          "window_shoppers": 15.7,
+          "cart_abandoners": 5.8,
+          "at_risk": 1.2
+        }
+      },
+      {
+        product_id: "prod_1002",
+        name: "Samsung Galaxy S24",
+        category: "electronics.smartphone",
+        brand: "samsung",
+        total_sales: 1923,
+        revenue: 1634550.00,
+        avg_price: 999.99,
+        top_segment: "Loyal Customers",
+        segment_distribution: {
+          "loyal_customers": 38.4,
+          "high_converters": 28.9,
+          "window_shoppers": 18.2,
+          "cart_abandoners": 12.1,
+          "at_risk": 2.4
+        }
+      },
+      {
+        product_id: "prod_1003",
+        name: "MacBook Air M3",
+        category: "electronics.laptop",
+        brand: "apple",
+        total_sales: 1456,
+        revenue: 1891244.00,
+        avg_price: 1299.99,
+        top_segment: "High Converters",
+        segment_distribution: {
+          "high_converters": 52.1,
+          "loyal_customers": 28.3,
+          "window_shoppers": 12.4,
+          "cart_abandoners": 5.2,
+          "at_risk": 2.0
+        }
+      }
+    ])
   }
 
   const COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6']
@@ -195,18 +349,27 @@ export default function Dashboard() {
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center space-x-6">
                 <nav className="flex items-center space-x-1">
-                  <a href="/" className="nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                  <button
+                    onClick={() => setActiveMainTab('dashboard')}
+                    className={`nav-item ${activeMainTab === 'dashboard' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <TrendingUp className="h-4 w-4" />
                     <span>Dashboard</span>
-                  </a>
-                  <a href="/segments" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                  </button>
+                  <button
+                    onClick={() => setActiveMainTab('segments')}
+                    className={`nav-item ${activeMainTab === 'segments' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <Users className="h-4 w-4" />
                     <span>Segments</span>
-                  </a>
-                  <a href="/breakdown" className="nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                  </button>
+                  <button
+                    onClick={() => setActiveMainTab('breakdown')}
+                    className={`nav-item ${activeMainTab === 'breakdown' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <Target className="h-4 w-4" />
                     <span>Breakdown</span>
-                  </a>
+                  </button>
                 </nav>
 
                 <div className="flex items-center space-x-4">
@@ -230,70 +393,84 @@ export default function Dashboard() {
             {mobileMenuOpen && (
               <div className="lg:hidden pb-4 border-t border-gray-100 dark:border-gray-700 pt-4">
                 <nav className="space-y-2">
-                  <a href="/" className="block nav-item active dark:text-purple-400 dark:bg-purple-900/20">
+                  <button
+                    onClick={() => {setActiveMainTab('dashboard'); setMobileMenuOpen(false)}}
+                    className={`block nav-item ${activeMainTab === 'dashboard' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <TrendingUp className="h-4 w-4" />
                     <span>Dashboard</span>
-                  </a>
-                  <a href="/segments" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                  </button>
+                  <button
+                    onClick={() => {setActiveMainTab('segments'); setMobileMenuOpen(false)}}
+                    className={`block nav-item ${activeMainTab === 'segments' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <Users className="h-4 w-4" />
                     <span>Segments</span>
-                  </a>
-                  <a href="/breakdown" className="block nav-item dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+                  </button>
+                  <button
+                    onClick={() => {setActiveMainTab('breakdown'); setMobileMenuOpen(false)}}
+                    className={`block nav-item ${activeMainTab === 'breakdown' ? 'active dark:text-purple-400 dark:bg-purple-900/20' : 'dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'}`}
+                  >
                     <Target className="h-4 w-4" />
                     <span>Breakdown</span>
-                  </a>
+                  </button>
                 </nav>
               </div>
             )}
           </div>
         </header>
 
-        {/* Sub-Tab Navigation */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'analytics'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                <BarChart2 className="h-4 w-4 mr-2 inline" />
-                Analytics
-              </button>
-              <button
-                onClick={() => setActiveTab('trends')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'trends'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                <Clock className="h-4 w-4 mr-2 inline" />
-                Past Trends
-              </button>
-              <button
-                onClick={() => setActiveTab('clusters')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'clusters'
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
-              >
-                <Dot className="h-4 w-4 mr-2 inline" />
-                Product Clusters
-              </button>
-            </nav>
+        {/* Sub-Tab Navigation - Only show for Dashboard */}
+        {activeMainTab === 'dashboard' && (
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <nav className="sub-tab-container space-x-8">
+                <button
+                  onClick={() => setActiveSubTab('analytics')}
+                  className={`sub-tab-button py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                    activeSubTab === 'analytics'
+                      ? 'active border-purple-500 text-purple-600 dark:text-purple-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <BarChart2 className="h-4 w-4 mr-2 inline" />
+                  Analytics
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('trends')}
+                  className={`sub-tab-button py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                    activeSubTab === 'trends'
+                      ? 'active border-purple-500 text-purple-600 dark:text-purple-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <Clock className="h-4 w-4 mr-2 inline" />
+                  Past Trends
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('clusters')}
+                  className={`sub-tab-button py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
+                    activeSubTab === 'clusters'
+                      ? 'active border-purple-500 text-purple-600 dark:text-purple-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <Network className="h-4 w-4 mr-2 inline" />
+                  Product Clusters
+                </button>
+              </nav>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'analytics' && (
-            <>
-              {/* Key Metrics */}
+        <main className={`${activeMainTab === 'dashboard' && activeSubTab === 'segments' && selectedCampaignType === 'calendar' ? 'max-w-full mx-auto py-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
+          <div className="tab-content">
+            {activeMainTab === 'dashboard' && (
+              <div className="tab-pane">
+                {activeSubTab === 'analytics' && (
+                  <div>
+                    {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="metric-card">
               <div className="flex items-center justify-between">
@@ -452,18 +629,20 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-            </>
-          )}
+                  </div>
+                )}
 
-          {activeTab === 'trends' && (
+                {activeSubTab === 'trends' && (
+                  <div>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Past Campaign Trends</h2>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">OCR analysis of past campaigns and their performance</p>
                 </div>
-                <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
-                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">🔍 OCR Powered</span>
+                <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full flex items-center space-x-1">
+                  <Search className="h-4 w-4 text-blue-800 dark:text-blue-200" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">OCR Powered</span>
                 </div>
               </div>
 
@@ -519,42 +698,403 @@ export default function Dashboard() {
               </div>
 
             </div>
-          )}
+                  </div>
+                )}
 
-          {activeTab === 'clusters' && (
+                {activeSubTab === 'clusters' && (
+                  <div>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Product Clusters</h2>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">Visualization of product similarity and clustering patterns</p>
                 </div>
-                <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full">
-                  <span className="text-sm text-purple-800 dark:text-purple-200 font-medium">🔬 ML Clustering</span>
+                <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full flex items-center space-x-1">
+                  <GitBranch className="h-4 w-4 text-purple-800 dark:text-purple-200" />
+                  <span className="text-sm text-purple-800 dark:text-purple-200 font-medium">ML Clustering</span>
                 </div>
               </div>
 
-              {/* Cluster Visualization */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Similarity Map</h3>
-                <div className="relative h-96 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
-                  {productClusters.map((cluster, index) => (
-                    <div
-                      key={index}
-                      className={`absolute w-16 h-16 rounded-full ${cluster.color} opacity-70 flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:opacity-100 transition-opacity`}
-                      style={{
-                        left: `${cluster.center.x}%`,
-                        top: `${cluster.center.y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                      title={`${cluster.cluster_name}: ${cluster.products.join(', ')}`}
+              {/* Cluster Visualization - Interactive Graph */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Graph Visualization */}
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Similarity Graph</h3>
+
+                  {/* Zoom Controls */}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <button
+                      onClick={() => setTransform(prev => ({ ...prev, scale: Math.min(prev.scale * 1.2, 3) }))}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
                     >
-                      {cluster.products.length}
+                      Zoom In
+                    </button>
+                    <button
+                      onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(prev.scale * 0.8, 0.5) }))}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
+                    >
+                      Zoom Out
+                    </button>
+                    <button
+                      onClick={resetZoom}
+                      className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded"
+                    >
+                      Reset View
+                    </button>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {Math.round(transform.scale * 100)}%
+                    </span>
+                  </div>
+
+                  <div
+                    className="relative h-96 bg-gray-800 dark:bg-gray-900 rounded-lg overflow-hidden border cursor-grab"
+                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onWheel={handleWheel}
+                  >
+                    {/* Zoomable/Pannable Content Container */}
+                    <div
+                      className="absolute inset-0 transition-transform origin-top-left"
+                      style={{
+                        transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+                        transformOrigin: '0 0'
+                      }}
+                    >
+                      {/* Graph Axes */}
+                      <div className="absolute inset-0">
+                      {/* Y-axis */}
+                      <div className="absolute left-4 top-4 bottom-4 w-px bg-gray-400 dark:bg-gray-500"></div>
+                      {/* X-axis */}
+                      <div className="absolute left-4 bottom-4 right-4 h-px bg-gray-400 dark:bg-gray-500"></div>
+
+                      {/* Axis Labels */}
+                      <div className="absolute left-1 top-2 text-xs text-gray-300 dark:text-gray-300 transform -rotate-90 origin-left">
+                        Market Appeal
+                      </div>
+                      <div className="absolute bottom-1 right-2 text-xs text-gray-300 dark:text-gray-300">
+                        Price Range
+                      </div>
                     </div>
-                  ))}
+
+                    {/* Individual Product Dots - Randomly positioned within clusters */}
+                    {productClusters.map((cluster, clusterIndex) =>
+                      cluster.products.map((product, productIndex) => {
+                        // Generate consistent random positions within cluster radius using product name as seed
+                        const seed = product.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+                        const angle = (seed * 137.5) % 360 // Golden angle for even distribution
+                        const radius = 15 + (seed % 20) // Random radius between 15-35px from center
+                        const radians = (angle * Math.PI) / 180
+                        const x = cluster.center.x + (Math.cos(radians) * radius) / 4
+                        const y = cluster.center.y + (Math.sin(radians) * radius) / 4
+                        const isSelected = selectedProduct === product
+                        const isClusterSelected = selectedCluster === cluster.cluster_name
+
+                        return (
+                          <div
+                            key={`${clusterIndex}-${productIndex}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (!isDragging) {
+                                setSelectedProduct(selectedProduct === product ? null : product)
+                                setSelectedCluster(cluster.cluster_name)
+                              }
+                            }}
+                            className={`absolute w-4 h-4 rounded-full cursor-pointer transition-all duration-200 shadow-lg border-2 ${
+                              isSelected
+                                ? `${cluster.color} border-gray-900 dark:border-white scale-150 z-10`
+                                : isClusterSelected
+                                ? `${cluster.color} border-white scale-125`
+                                : `${cluster.color} border-white hover:scale-125`
+                            }`}
+                            style={{
+                              left: `${Math.max(6, Math.min(94, x))}%`,
+                              top: `${Math.max(6, Math.min(94, y))}%`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                            title={`${product} - Click to explore`}
+                          />
+                        )
+                      })
+                    )}
+
+                    {/* Cluster Boundary Shapes - Scanner Style */}
+                    {productClusters.map((cluster, index) => {
+                      const isSelected = selectedCluster === cluster.cluster_name;
+                      return (
+                        <svg
+                          key={`boundary-${index}`}
+                          className={`absolute pointer-events-none transition-opacity duration-300 ${
+                            isSelected ? 'opacity-80' : 'opacity-25'
+                          }`}
+                          style={{
+                            left: `${cluster.center.x}%`,
+                            top: `${cluster.center.y}%`,
+                            width: '120px',
+                            height: '120px',
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                          viewBox="0 0 120 120"
+                        >
+                          {/* Cluster outline circle */}
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                   cluster.color.includes('red') ? '#ef4444' :
+                                   cluster.color.includes('yellow') ? '#f59e0b' :
+                                   cluster.color.includes('green') ? '#10b981' :
+                                   cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                            strokeWidth="2"
+                            strokeDasharray="8,4"
+                            opacity="0.6"
+                          />
+
+                          {/* Outer boundary circle */}
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="55"
+                            fill="none"
+                            stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                   cluster.color.includes('red') ? '#ef4444' :
+                                   cluster.color.includes('yellow') ? '#f59e0b' :
+                                   cluster.color.includes('green') ? '#10b981' :
+                                   cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                            strokeWidth="1"
+                            strokeDasharray="4,8"
+                            opacity="0.4"
+                          />
+
+                          {/* Corner brackets for scanner effect */}
+                          <g opacity={isSelected ? "0.8" : "0.4"}>
+                            {/* Top-left bracket */}
+                            <path
+                              d="M25 25 L25 35 M25 25 L35 25"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Top-right bracket */}
+                            <path
+                              d="M95 25 L95 35 M95 25 L85 25"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Bottom-left bracket */}
+                            <path
+                              d="M25 95 L25 85 M25 95 L35 95"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Bottom-right bracket */}
+                            <path
+                              d="M95 95 L95 85 M95 95 L85 95"
+                              stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                          </g>
+
+                          {/* Center crosshair when selected */}
+                          {isSelected && (
+                            <g opacity="0.6">
+                              <line x1="50" y1="60" x2="70" y2="60" stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'} strokeWidth="2"/>
+                              <line x1="60" y1="50" x2="60" y2="70" stroke={cluster.color.includes('blue') ? '#3b82f6' :
+                                     cluster.color.includes('red') ? '#ef4444' :
+                                     cluster.color.includes('yellow') ? '#f59e0b' :
+                                     cluster.color.includes('green') ? '#10b981' :
+                                     cluster.color.includes('purple') ? '#8b5cf6' : '#6b7280'} strokeWidth="2"/>
+                            </g>
+                          )}
+                        </svg>
+                      );
+                    })}
+
+                    {/* Cluster Labels */}
+                    {productClusters.map((cluster, index) => (
+                      <div
+                        key={index}
+                        className={`absolute cursor-pointer transition-all duration-200 ${
+                          selectedCluster === cluster.cluster_name ? 'scale-110' : ''
+                        }`}
+                        style={{
+                          left: `${cluster.center.x}%`,
+                          top: `${cluster.center.y + 18}%`,
+                          transform: 'translate(-50%, 0)'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (!isDragging) {
+                            setSelectedCluster(selectedCluster === cluster.cluster_name ? null : cluster.cluster_name)
+                          }
+                        }}
+                      >
+                        <div className={`px-2 py-1 rounded shadow-sm border transition-colors duration-200 ${
+                          selectedCluster === cluster.cluster_name
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                            : 'bg-white dark:bg-gray-700'
+                        }`}>
+                          <span className={`text-xs font-medium ${
+                            selectedCluster === cluster.cluster_name
+                              ? 'text-white dark:text-gray-900'
+                              : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {cluster.cluster_name}
+                          </span>
+                          <div className={`text-xs ${
+                            selectedCluster === cluster.cluster_name
+                              ? 'text-gray-300 dark:text-gray-600'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {cluster.products.length} products
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    Click and drag to pan, scroll to zoom. Click on products or cluster names to explore relationships.
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                  Hover over clusters to see product details. Proximity indicates similarity.
-                </p>
+
+                {/* Product Details Sidebar */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Product Details</h3>
+
+                  {selectedProduct ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedProduct}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Cluster: {selectedCluster}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Market Appeal</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {Math.floor(Math.random() * 30 + 70)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Similarity Score</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {Math.floor(Math.random() * 20 + 80)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Price Range</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            ${Math.floor(Math.random() * 500 + 200)} - ${Math.floor(Math.random() * 800 + 800)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Related Products</h5>
+                        <div className="space-y-1">
+                          {productClusters
+                            .find(c => c.cluster_name === selectedCluster)?.products
+                            .filter(p => p !== selectedProduct)
+                            .map((product, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedProduct(product)}
+                                className="block w-full text-left text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {product}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(null)
+                            setSelectedCluster(null)
+                          }}
+                          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                    </div>
+                  ) : selectedCluster ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{selectedCluster}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {productClusters.find(c => c.cluster_name === selectedCluster)?.products.length} products in this cluster
+                        </p>
+                      </div>
+
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Products in this cluster:</h5>
+                        <div className="space-y-1">
+                          {productClusters
+                            .find(c => c.cluster_name === selectedCluster)?.products
+                            .map((product, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setSelectedProduct(product)}
+                                className="block w-full text-left text-sm text-blue-600 dark:text-blue-400 hover:underline p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              >
+                                {product}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <button
+                          onClick={() => setSelectedCluster(null)}
+                          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 dark:text-gray-500 mb-2">
+                        <Network className="h-12 w-12 mx-auto" />
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Click on a product or cluster to explore details and relationships
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Cluster Details */}
@@ -589,30 +1129,234 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-6 border border-green-200 dark:border-green-800">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Clustering Insights</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Strong Clusters</h4>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• Premium Smartphones (iPhone 15 Pro, Galaxy S24 Ultra)</li>
-                      <li>• Professional Laptops (MacBook Pro, Dell XPS)</li>
-                      <li>• Audio Accessories (AirPods, Sony headphones)</li>
-                    </ul>
+            </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white mb-2">Cross-sell Opportunities</h4>
-                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      <li>• iPhone buyers → AirPods, Apple Watch</li>
-                      <li>• MacBook buyers → iPad Pro, peripherals</li>
-                      <li>• Premium phone buyers → Premium accessories</li>
-                    </ul>
+                )}
+              </div>
+            )}
+
+            {/* Segments Tab Content */}
+            {activeMainTab === 'segments' && (
+              <div className="tab-pane">
+                {showCampaignSelection ? (
+                  // Campaign Type Selection
+                  <>
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Campaign Generation</h2>
+                      <p className="text-gray-600 dark:text-gray-400">Choose how you want to create your next campaign</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                      {/* Calendar Campaign Button */}
+                      <div className="klaviyo-card hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                        <div className="text-center p-8" onClick={() => handleCampaignTypeSelection('calendar')}>
+                          <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <Calendar className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Calendar Campaign</h3>
+                          <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            Create and schedule multiple email campaigns with AI-powered content generation, product targeting, and strategic timing across a full calendar view.
+                          </p>
+                          <div className="flex items-center justify-center space-x-2 text-blue-600 dark:text-blue-400 font-medium">
+                            <span>✨ AI Strategy Generation • 📧 Email Campaigns • 📅 Calendar Scheduling</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Popup Campaign Button */}
+                      <div className="klaviyo-card hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                        <div className="text-center p-8" onClick={() => handleCampaignTypeSelection('popup')}>
+                          <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <Zap className="h-10 w-10 text-orange-600 dark:text-orange-400" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Popup Campaign</h3>
+                          <p className="text-gray-600 dark:text-gray-400 mb-6">
+                            Design targeted popup advertisements with personalized messaging, custom visuals, and conversion-optimized layouts for specific customer segments.
+                          </p>
+                          <div className="flex items-center justify-center space-x-2 text-orange-600 dark:text-orange-400 font-medium">
+                            <span>🎨 Visual Design • 🎯 Targeting • 💬 Personalization</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : selectedCampaignType === 'calendar' ? (
+                  // Calendar Campaign Builder
+                  <CalendarCampaignBuilder onBack={handleBackToCampaignSelection} />
+                ) : selectedCampaignType === 'popup' ? (
+                  // Popup Campaign Builder
+                  <PopupCampaignBuilder onBack={handleBackToCampaignSelection} />
+                ) : null}
+              </div>
+            )}
+
+            {/* Breakdown Tab Content */}
+            {activeMainTab === 'breakdown' && (
+              <div className="tab-pane">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Audience Insights</h2>
+                  <p className="text-gray-600 dark:text-gray-400">Ask questions about your customer segments and get insights with highlighted data</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Side - Chat Interface */}
+                  <div className="space-y-6">
+                    {/* AI Chat for Segment Questions */}
+                    <div className="klaviyo-card">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ask About Your Segments</h3>
+                      <div className="space-y-4">
+                        {/* Sample Questions */}
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Try asking:</p>
+                          <div className="flex flex-wrap gap-2">
+                            <button className="px-3 py-1 text-xs bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-800 dark:text-purple-200 rounded-full transition-colors">
+                              What do my most loyal customers buy?
+                            </button>
+                            <button className="px-3 py-1 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full transition-colors">
+                              How do high converters shop?
+                            </button>
+                            <button className="px-3 py-1 text-xs bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-800 dark:text-green-200 rounded-full transition-colors">
+                              Why do customers abandon carts?
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Chat Input */}
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            placeholder="Ask about your customer segments..."
+                            className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                          <button className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            Ask
+                          </button>
+                        </div>
+
+                        {/* Sample Response */}
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                              <Wand2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                <strong>AI Analysis:</strong> Your most loyal customers primarily purchase premium electronics, with iPhone 15 Pro being the top choice (52% of purchases). They prefer to shop during weekday evenings and respond well to personalized email campaigns.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Segment Overview */}
+                    <div className="klaviyo-card">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Segment Overview</h3>
+                      <div className="space-y-3">
+                        {[
+                          { name: 'High Converters', count: 2847, percentage: 6.5, color: 'bg-blue-500', trend: '+12%' },
+                          { name: 'Loyal Customers', count: 4256, percentage: 9.7, color: 'bg-purple-500', trend: '+8%' },
+                          { name: 'Window Shoppers', count: 15623, percentage: 35.4, color: 'bg-green-500', trend: '+5%' },
+                          { name: 'Cart Abandoners', count: 8941, percentage: 20.3, color: 'bg-yellow-500', trend: '-3%' },
+                          { name: 'At Risk', count: 12387, percentage: 28.1, color: 'bg-red-500', trend: '-7%' }
+                        ].map((segment, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-4 h-4 rounded-full ${segment.color}`}></div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white text-sm">{segment.name}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{segment.count.toLocaleString()} customers</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">{segment.percentage}%</p>
+                              <p className={`text-xs ${segment.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                                {segment.trend}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side - Highlighted Data */}
+                  <div className="space-y-6">
+                    {/* Highlighted Products */}
+                    <div className="klaviyo-card">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        <span className="flex items-center space-x-2">
+                          <span>Top Products</span>
+                          <div className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full">
+                            Loyal Customers
+                          </div>
+                        </span>
+                      </h3>
+                      <div className="space-y-3">
+                        {[
+                          { name: 'iPhone 15 Pro', purchases: 1456, percentage: 52, highlight: true },
+                          { name: 'MacBook Pro M3', purchases: 892, percentage: 32, highlight: true },
+                          { name: 'AirPods Pro', purchases: 634, percentage: 23, highlight: false },
+                          { name: 'Apple Watch Series 9', purchases: 445, percentage: 16, highlight: false }
+                        ].map((product, index) => (
+                          <div key={index} className={`p-3 rounded-lg border-2 transition-all ${
+                            product.highlight
+                              ? 'border-purple-200 bg-purple-50 dark:border-purple-700 dark:bg-purple-900/20'
+                              : 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {product.highlight && <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>}
+                                <p className={`font-medium text-sm ${product.highlight ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-white'}`}>
+                                  {product.name}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className={`font-semibold text-sm ${product.highlight ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-white'}`}>
+                                  {product.purchases}
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{product.percentage}%</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Shopping Behavior */}
+                    <div className="klaviyo-card">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Shopping Behavior</h3>
+                      <div className="space-y-4">
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            <p className="font-medium text-purple-900 dark:text-purple-100 text-sm">Peak Shopping Time</p>
+                          </div>
+                          <p className="text-sm text-purple-800 dark:text-purple-200">Weekday evenings (6-9 PM)</p>
+                        </div>
+
+                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Mail className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            <p className="font-medium text-purple-900 dark:text-purple-100 text-sm">Preferred Channel</p>
+                          </div>
+                          <p className="text-sm text-purple-800 dark:text-purple-200">Personalized email campaigns (89% engagement)</p>
+                        </div>
+
+                        <div className="p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <DollarSign className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">Average Order Value</p>
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">$1,247 (+23% vs other segments)</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
+            )}
+          </div>
         </main>
 
         {/* Campaign Modal */}
@@ -621,6 +1365,14 @@ export default function Dashboard() {
           onClose={() => setCampaignModal({ isOpen: false })}
           segmentName={campaignModal.segmentName}
           productName={campaignModal.productName}
+        />
+
+        {/* Popup Ad Creator */}
+        <PopupAdCreator
+          isOpen={popupAdModal.isOpen}
+          onClose={() => setPopupAdModal({ isOpen: false })}
+          segmentName={popupAdModal.segmentName}
+          productName={popupAdModal.productName}
         />
       </div>
     </>

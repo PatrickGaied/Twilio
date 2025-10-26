@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 requests==2.31.0
 pandas==2.1.4
 python-dotenv==1.0.0
 chromadb==0.4.22
+=======
+google-generativeai
+pillow
+python-dotenv
+>>>>>>> 072a80908f4936a1092d1494cd35466436e8fc9b

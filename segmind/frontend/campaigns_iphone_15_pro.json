@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "day": "Monday",
+    "time": "10:00 AM",
+    "type": "Primary Campaign",
+    "audience": "Window Shoppers",
+    "theme": "iPhone 15 Pro Introduction",
+    "subject": "Meet the Future: iPhone 15 Pro is Here!",
+    "preview": "Experience the future of technology with the iPhone 15 Pro. Get a sneak peek now!",
+    "prompt": "Generate a catchy introduction email for the iPhone 15 Pro to encourage window shoppers to make a purchase",
+    "emailContent": "Dear Tech Enthusiast, get ready to step into the future with our brand new iPhone 15 Pro. Packed with cutting-edge features, this is not just a phone, it's a revolution. Don't wait, grab yours now!",
+    "imagePrompt": "Generate an image of a sleek iPhone 15 Pro against a futuristic background",
+    "status": "pending"
+  },
+  {
+    "id": "2",
+    "day": "Wednesday",
+    "time": "2:00 PM",
+    "type": "Follow-up Campaign",
+    "audience": "Cart Abandoners",
+    "theme": "iPhone 15 Pro Cart Recovery",
+    "subject": "Still Considering the iPhone 15 Pro? We Saved It For You!",
+    "preview": "Your future iPhone 15 Pro is waiting in your cart. Don't let it slip away!",
+    "prompt": "Generate a follow-up email for customers who abandoned their cart with the iPhone 15 Pro, encouraging them to complete their purchase",
+    "emailContent": "Hi there, we noticed you left an iPhone 15 Pro in your cart. Don't let the future wait, complete your purchase now. Remember, the future is now!",
+    "imagePrompt": "Generate an image of a shopping cart with an iPhone 15 Pro peeking out",
+    "status": "pending"
+  },
+  {
+    "id": "3",
+    "day": "Friday",
+    "time": "9:00 AM",
+    "type": "Premium Drop Campaign",
+    "audience": "High Converters",
+    "theme": "iPhone 15 Pro Exclusive Offer",
+    "subject": "Exclusive: Special Offer on Your New iPhone 15 Pro",
+    "preview": "As our valued customer, we have an exclusive offer just for you on the iPhone 15 Pro!",
+    "prompt": "Generate an email offering a special discount on the iPhone 15 Pro for high converting customers",
+    "emailContent": "Dear Valued Customer, as a token of appreciation for your loyalty, we are offering an exclusive discount on the iPhone 15 Pro. Grab this offer now and step into the future with us!",
+    "imagePrompt": "Generate an image of the iPhone 15 Pro with a special discount badge",
+    "status": "pending"
+  }
+]

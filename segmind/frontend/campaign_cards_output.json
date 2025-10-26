@@ -1,0 +1,72 @@
+[
+  {
+    "id": "001",
+    "day": "Monday",
+    "time": "10:00 AM",
+    "type": "Primary Campaign",
+    "audience": "Window Shoppers",
+    "theme": "iPhone 15 Pro Introduction",
+    "subject": "Unbox the Future with the New iPhone 15 Pro!",
+    "preview": "Discover the exclusive features of the iPhone 15 Pro.",
+    "prompt": "Detailed walk-through of the iPhone 15 Pro features.",
+    "emailContent": "Hello Shopper, the future is here with the new iPhone 15 Pro! Dive into its exclusive features and state-of-the-art technology, tailored to revolutionize your experience.",
+    "imagePrompt": "Showcase a high-resolution image of iPhone 15 Pro with its key features highlighted.",
+    "status": "pending"
+  },
+  {
+    "id": "002",
+    "day": "Wednesday",
+    "time": "2:00 PM",
+    "type": "Primary Campaign",
+    "audience": "Window Shoppers",
+    "theme": "iPhone 15 Pro Photography",
+    "subject": "Click Like a Pro with the iPhone 15 Pro!",
+    "preview": "Experience the magic of professional photography with iPhone 15 Pro.",
+    "prompt": "Showcase the camera capabilities of the iPhone 15 Pro.",
+    "emailContent": "Hello Shopper, turn every click into a masterpiece with the iPhone 15 Pro's enhanced camera features. Discover the magic of professional photography at your fingertips.",
+    "imagePrompt": "Exhibit stunning images clicked by iPhone 15 Pro's camera with a side-by-side comparison with a professional camera shot.",
+    "status": "pending"
+  },
+  {
+    "id": "003",
+    "day": "Thursday",
+    "time": "11:00 AM",
+    "type": "Follow-up",
+    "audience": "Cart Abandoners",
+    "theme": "iPhone 15 Pro Abandoned Cart",
+    "subject": "You Left Something Behind in Your Cart!",
+    "preview": "Take the final step and experience the iPhone 15 Pro.",
+    "prompt": "Persuade the customer to complete their purchase of the iPhone 15 Pro.",
+    "emailContent": "Hello Shopper, the iPhone 15 Pro you left in your cart is waiting for you. Don't miss out on the chance to experience the future of technology. Complete your purchase now!",
+    "imagePrompt": "Display the iPhone 15 Pro in the shopping cart with an attention-grabbing 'Complete Your Purchase' call-to-action button.",
+    "status": "pending"
+  },
+  {
+    "id": "004",
+    "day": "Friday",
+    "time": "9:00 AM",
+    "type": "Premium Drop",
+    "audience": "High Converters",
+    "theme": "iPhone 15 Pro Exclusive Offer",
+    "subject": "Exclusive Offer Just For You - iPhone 15 Pro!",
+    "preview": "Unlock your exclusive offer on the iPhone 15 Pro.",
+    "prompt": "Announce a special discount on the iPhone 15 Pro for high converters.",
+    "emailContent": "Hello Shopper, as one of our valued customers, we have an exclusive offer just for you. Get a special discount on your iPhone 15 Pro purchase. Hurry, the offer is for a limited period!",
+    "imagePrompt": "Show an attention-grabbing banner of the iPhone 15 Pro with the 'Exclusive Offer' text and the discounted price.",
+    "status": "pending"
+  },
+  {
+    "id": "005",
+    "day": "Sunday",
+    "time": "6:00 PM",
+    "type": "Weekly Recap",
+    "audience": "All Segments",
+    "theme": "iPhone 15 Pro Weekly Recap",
+    "subject": "Here's What You Missed This Week About the iPhone 15 Pro!",
+    "preview": "Catch up with all the information about the iPhone 15 Pro.",
+    "prompt": "Summarize the week's content about the iPhone 15 Pro.",
+    "emailContent": "Hello Shopper, in case you missed it, here's a recap of all the exciting updates and offers around the iPhone 15 Pro from this week. Stay tuned for more!",
+    "imagePrompt": "Create a collage of images from the week's campaigns for the iPhone 15 Pro.",
+    "status": "pending"
+  }
+]

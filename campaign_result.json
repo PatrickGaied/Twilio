@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "cards": [
+    {
+      "id": "card_1729909876_0",
+      "day": "Monday",
+      "time": "10:00 AM",
+      "type": "Primary Campaign",
+      "audience": "Window Shoppers",
+      "theme": "iPhone 15 Pro Introduction",
+      "subject": "Experience the Unmatched Power of iPhone 15 Pro!",
+      "preview": "Get to know the all-new iPhone 15 Pro!",
+      "prompt": "Generate an engaging email introducing the iPhone 15 Pro to window shoppers.",
+      "emailContent": "Dear [Customer Name],\n\nWe thought you might be interested in the all-new iPhone 15 Pro. Packed with advanced technology, stunning visuals, and unmatched performance, it's a device that truly stands apart.\n\nDon't just take our word for it, come and experience the power of the iPhone 15 Pro yourself! \n\nBest,\n[Your Name]",
+      "imagePrompt": "Generate an image showcasing the sleek design and advanced features of the iPhone 15 Pro.",
+      "status": "pending"
+    },
+    {
+      "id": "card_1729909876_1",
+      "day": "Wednesday",
+      "time": "2:00 PM",
+      "type": "Follow-up Campaign",
+      "audience": "Cart Abandoners",
+      "theme": "iPhone 15 Pro Cart Abandonment",
+      "subject": "You're One Step Away From Owning an iPhone 15 Pro!",
+      "preview": "Don't miss out on the iPhone 15 Pro!",
+      "prompt": "Generate a follow-up email for customers who added the iPhone 15 Pro to their cart but abandoned the purchase.",
+      "emailContent": "Dear [Customer Name],\n\nWe noticed you left a shiny new iPhone 15 Pro in your cart. Don't miss out on the chance to experience this incredible device. Complete your purchase today! \n\nBest,\n[Your Name]",
+      "imagePrompt": "Generate an image showing the iPhone 15 Pro in a shopping cart to remind the customer of their abandoned purchase.",
+      "status": "pending"
+    }
+  ],
+  "processed_at": "2025-10-25T23:11:12.243289",
+  "total_cards": 2,
+  "processing_time_seconds": 10.878321,
+  "ai_generated": true
+}
