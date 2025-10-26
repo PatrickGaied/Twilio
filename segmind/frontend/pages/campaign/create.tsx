@@ -39,6 +39,104 @@ export default function CreateCampaignPage() {
   const [campaignGoal, setCampaignGoal] = useState<string>('')
   const [step, setStep] = useState<'brand' | 'products' | 'tone' | 'review'>('brand')
 
+  // Product-audience affinity data based on query params
+  const getAffinityData = () => {
+    if (!segment || !initialProduct) return null
+
+    // Mock affinity data - in real app this would come from API
+    const affinityMap: { [key: string]: { [key: string]: { affinity: number, conversion: number, revenue: number } } } = {
+      'iPhone 15 Pro': {
+        'High Converters': { affinity: 92, conversion: 28.4, revenue: 488000 },
+        'Loyal Customers': { affinity: 78, conversion: 22.1, revenue: 340000 },
+        'Window Shoppers': { affinity: 45, conversion: 12.3, revenue: 156000 }
+      },
+      'Samsung Galaxy S24': {
+        'Loyal Customers': { affinity: 87, conversion: 23.1, revenue: 298000 },
+        'High Converters': { affinity: 72, conversion: 19.8, revenue: 267000 },
+        'Window Shoppers': { affinity: 58, conversion: 15.6, revenue: 198000 }
+      },
+      'MacBook Air M3': {
+        'High Converters': { affinity: 89, conversion: 31.2, revenue: 654000 },
+        'Loyal Customers': { affinity: 76, conversion: 24.7, revenue: 432000 }
+      }
+    }
+
+    return affinityMap[initialProduct as string]?.[segment as string] || null
+  }
+
+  const affinityData = getAffinityData()
+
+  // Get similar high-performing products
+  const getSimilarProducts = () => {
+    const similarProducts = [
+      { name: 'iPhone 15 Pro Max', similarity: 94, conversion: 26.8, revenue: 523000 },
+      { name: 'MacBook Pro M3', similarity: 89, conversion: 31.2, revenue: 654000 },
+      { name: 'iPhone 14 Pro', similarity: 91, conversion: 24.1, revenue: 399000 }
+    ]
+    return similarProducts
+  }
+
+  // Get underperforming products that could benefit
+  const getUnderperformingProducts = () => {
+    const underperforming = [
+      { name: 'AirPods Max', similarity: 79, conversion: 18.7, revenue: 187000 },
+      { name: 'Apple Watch SE', similarity: 76, conversion: 16.2, revenue: 146000 },
+      { name: 'iPad Air', similarity: 73, conversion: 15.8, revenue: 123000 }
+    ]
+    return underperforming
+  }
+
+  // Generate AI campaign calendar based on product and segment
+  const generateAICampaignCalendar = () => {
+    if (!segment || !initialProduct) return []
+
+    const schedules = [
+      {
+        type: 'Email',
+        title: `Exclusive ${initialProduct} Launch for ${segment}`,
+        description: 'Premium positioning email with early access offer',
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        time: '10:00 AM',
+        priority: 'high',
+        color: 'purple'
+      },
+      {
+        type: 'Push',
+        title: `Limited Time: ${initialProduct} Flash Sale`,
+        description: 'Urgency-driven push notification for high converters',
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+        time: '6:00 PM',
+        priority: 'high',
+        color: 'red'
+      },
+      {
+        type: 'Email',
+        title: `Why ${segment} Love ${initialProduct}`,
+        description: 'Social proof and testimonials email',
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
+        time: '2:00 PM',
+        priority: 'medium',
+        color: 'blue'
+      },
+      {
+        type: 'SMS',
+        title: `Final Hours: ${initialProduct} Deal`,
+        description: 'Last chance SMS for maximum urgency',
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        time: '8:00 PM',
+        priority: 'high',
+        color: 'orange'
+      }
+    ]
+
+    return schedules
+  }
+
+  const handleCreateUnderperformingCampaign = (productName: string) => {
+    // Route to create campaign for underperforming product
+    router.push(`/campaign/create?segment=${segment}&product=${encodeURIComponent(productName)}&type=clearance`)
+  }
+
   const [brands] = useState([
     {
       id: "apple",
@@ -374,6 +472,157 @@ export default function CreateCampaignPage() {
             </div>
           </div>
         </header>
+
+        {/* Product-Audience Affinity Section */}
+        {affinityData && (
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                      {initialProduct} → {segment}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Why this combination works</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6 mb-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-600 mb-1">{affinityData.affinity}%</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Affinity Score</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-600 mb-1">{affinityData.conversion}%</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Conversion</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">${(affinityData.revenue / 1000).toFixed(0)}K</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-700">
+                  <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 flex items-center mb-2">
+                    💡 Why This Works
+                  </h3>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                    {segment === 'High Converters' && 'High Converters show exceptional affinity for premium Apple products'}
+                    {segment === 'Loyal Customers' && 'Loyal Customers prefer trusted brands and proven quality'}
+                    {segment === 'Window Shoppers' && 'Window Shoppers respond well to value propositions and deals'}
+                  </p>
+                  <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                    Create premium positioning campaigns emphasizing exclusivity and advanced features
+                  </p>
+                </div>
+
+                {/* Similar Products & Underperformers */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                  {/* High Performers */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">High Performers (Similar Products)</h3>
+                    <div className="space-y-2">
+                      {getSimilarProducts().map((product, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</p>
+                            <p className="text-xs text-green-600 dark:text-green-400">{product.similarity}% similar</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{product.conversion}%</p>
+                            <p className="text-xs text-green-600">${(product.revenue / 1000).toFixed(0)}K</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Under Performers */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Under Performers (Could Benefit)</h3>
+                    <div className="space-y-2">
+                      {getUnderperformingProducts().map((product, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleCreateUnderperformingCampaign(product.name)}
+                          className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                        >
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white text-sm">{product.name}</p>
+                            <p className="text-xs text-orange-600 dark:text-orange-400">{product.similarity}% similar • Click to create clearance campaign</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{product.conversion}%</p>
+                            <p className="text-xs text-orange-600">${(product.revenue / 1000).toFixed(0)}K</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Campaign Calendar */}
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                        🤖 AI-Generated Campaign Calendar
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Optimized schedule for {segment} targeting {initialProduct}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {generateAICampaignCalendar().map((schedule, index) => (
+                      <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${
+                              schedule.color === 'purple' ? 'bg-purple-600' :
+                              schedule.color === 'red' ? 'bg-red-600' :
+                              schedule.color === 'blue' ? 'bg-blue-600' :
+                              schedule.color === 'orange' ? 'bg-orange-600' : 'bg-gray-600'
+                            }`}>
+                              {schedule.type.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-white text-sm">{schedule.title}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{schedule.type}</p>
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            schedule.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            schedule.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          }`}>
+                            {schedule.priority}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{schedule.description}</p>
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                          <span>{schedule.date.toLocaleDateString()}</span>
+                          <span>{schedule.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      💡 <strong>AI Insight:</strong> {segment} respond best to {
+                        segment === 'High Converters' ? 'premium messaging with technical details and exclusivity angles' :
+                        segment === 'Loyal Customers' ? 'personalized communications emphasizing trust and rewards' :
+                        segment === 'Window Shoppers' ? 'value-driven content with social proof and limited-time offers' :
+                        'targeted messaging with appropriate incentives'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

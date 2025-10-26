@@ -166,16 +166,6 @@ export default function ProductSegmentInsights({ onCreateCampaign, onCreatePopup
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      setShowAnalysis(insight)
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
-                  >
-                    <BarChart3 className="h-3 w-3" />
-                    <span>Analyze</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
                       if (onCreateCampaign) {
                         onCreateCampaign(insight.product, insight.segment)
                       }
@@ -207,36 +197,6 @@ export default function ProductSegmentInsights({ onCreateCampaign, onCreatePopup
         ))}
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-1 mb-1">
-            <Target className="h-4 w-4 text-purple-600" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
-              {insights.filter(i => i.affinity_score >= 85).length}
-            </span>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">High Affinity Pairs</p>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-1 mb-1">
-            <TrendingUp className="h-4 w-4 text-green-600" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
-              {(insights.reduce((sum, i) => sum + i.conversion_rate, 0) / insights.length).toFixed(1)}%
-            </span>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Avg Conversion</p>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center space-x-1 mb-1">
-            <ShoppingCart className="h-4 w-4 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
-              ${(insights.reduce((sum, i) => sum + i.revenue, 0)).toLocaleString()}
-            </span>
-          </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Total Revenue</p>
-        </div>
-      </div>
 
       {/* Detailed View Modal */}
       {selectedInsight && (
