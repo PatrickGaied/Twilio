@@ -155,4 +155,4 @@ The app auto-reloads on code changes:
 - Backend: Edit `backend_api.py` and it auto-reloads
 - Frontend: Edit files in `segmind/frontend/` and it auto-reloads
 
-No need to restart containers!
+No need to restart containers!# Contribution test - PatrickGaied
