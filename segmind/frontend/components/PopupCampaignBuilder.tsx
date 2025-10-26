@@ -204,17 +204,96 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
   }
 
   const handleGenerateImage = async () => {
+    if (!popupHeadline || selectedProducts.length === 0) {
+      alert('Please select a product and enter a headline first')
+      return
+    }
+
     setIsGeneratingImage(true)
 
-    // Simulate loading time
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      const selectedProductData = selectedProducts.map(id => availableProducts.find(p => p.id === id)).filter(Boolean)
+      const product = selectedProductData[0]
 
-    // Cycle through available images
-    const currentImage = availableImages[currentImageIndex]
-    setGeneratedImage(currentImage)
-    setCurrentImageIndex((currentImageIndex + 1) % availableImages.length)
+      // Determine campaign type based on headline content
+      let campaignType = 'new_arrival'
+      const headline = popupHeadline.toLowerCase()
+      if (headline.includes('%') || headline.includes('off') || headline.includes('sale') || headline.includes('discount')) {
+        campaignType = 'discount'
+      } else if (headline.includes('new') || headline.includes('latest') || headline.includes('introducing')) {
+        campaignType = 'new_arrival'
+      } else if (headline.includes('feature') || headline.includes('camera') || headline.includes('performance')) {
+        campaignType = 'feature_highlight'
+      } else if (headline.includes('flash') || headline.includes('limited') || headline.includes('urgent')) {
+        campaignType = 'flash_sale'
+      }
 
-    setIsGeneratingImage(false)
+      // Determine style based on selected patterns
+      let style = 'modern'
+      if (selectedOCRPatterns.some(id => ocrPatterns.find(p => p.id === id)?.context.includes('athletic'))) {
+        style = 'bold'
+      } else if (selectedOCRPatterns.some(id => ocrPatterns.find(p => p.id === id)?.context.includes('premium'))) {
+        style = 'elegant'
+      }
+
+      const requestData = {
+        product_name: product.name,
+        campaign_type: campaignType,
+        prompt_text: `${popupHeadline}${popupDescription ? '. ' + popupDescription : ''}`,
+        style: style,
+        aspect_ratio: aspectRatio === '9:16' ? 'vertical' : aspectRatio === '16:9' ? 'horizontal' : 'square',
+        color_scheme: 'auto'
+      }
+
+      console.log('🚀 Generating popup image with:', requestData)
+
+      const response = await fetch('http://localhost:8000/api/popup-generator/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+
+      const result = await response.json()
+      console.log('✅ Popup generation result:', result)
+
+      if (result.success && result.generated_images && result.generated_images.length > 0) {
+        // Use the first generated image
+        const generatedImg = result.generated_images[0]
+        setGeneratedImage(generatedImg.base64)
+        setImageGenerationPrompt(result.prompt_used)
+
+        // Show success message
+        console.log('🎉 Image generated successfully!')
+      } else if (result.fallback) {
+        // Gemini not available, but we got a prompt
+        setImageGenerationPrompt(result.generated_prompt)
+        alert('Gemini API not configured. Here\'s the generated prompt you can use with other image generators.')
+
+        // Fallback to cycling through available images
+        const currentImage = availableImages[currentImageIndex]
+        setGeneratedImage(currentImage)
+        setCurrentImageIndex((currentImageIndex + 1) % availableImages.length)
+      } else {
+        console.error('Failed to generate image:', result.error || result.message)
+
+        // Fallback to cycling through available images
+        const currentImage = availableImages[currentImageIndex]
+        setGeneratedImage(currentImage)
+        setCurrentImageIndex((currentImageIndex + 1) % availableImages.length)
+      }
+
+    } catch (error) {
+      console.error('Error generating popup image:', error)
+
+      // Fallback to cycling through available images
+      const currentImage = availableImages[currentImageIndex]
+      setGeneratedImage(currentImage)
+      setCurrentImageIndex((currentImageIndex + 1) % availableImages.length)
+    } finally {
+      setIsGeneratingImage(false)
+    }
   }
 
   const handleApproveAndSchedule = async () => {
@@ -426,7 +505,7 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                     Generate Visual
                   </h4>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    Click to generate and cycle through popup images
+                    Uses proven snowy mountain prompt for ideal ads
                   </p>
                 </div>
                 <button
@@ -437,6 +516,13 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                   <ImageIcon className={`h-4 w-4 mr-2 ${isGeneratingImage ? 'animate-spin' : ''}`} />
                   {isGeneratingImage ? 'Generating...' : 'Generate Image'}
                 </button>
+              </div>
+              {/* Always show the prompt that will be used */}
+              <div className="mt-3 text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded border">
+                <div className="font-medium text-blue-800 dark:text-blue-200 mb-1">AI Prompt Preview:</div>
+                <div className="italic">
+                  "A photorealistic picture of my device set in a snowy mountain environment. The scene is illuminated by sunlight, creating a bright atmosphere. Captured with a dslr camera, emphasizing the exact same text as seen on the content image."
+                </div>
               </div>
             </div>
 
