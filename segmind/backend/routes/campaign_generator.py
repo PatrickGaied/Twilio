@@ -6,6 +6,7 @@ import json
 import random
 import requests
 import os
+import re
 
 router = APIRouter(prefix="/api/campaign-generator", tags=["campaign-generator"])
 
@@ -119,9 +120,15 @@ Return a JSON array of campaign objects with the following structure:
   "preview": "email_preview_text",
   "prompt": "generation_prompt",
   "emailContent": "full_email_content",
-  "imagePrompt": "image_generation_prompt",
+  "imagePrompt": "detailed_image_generation_prompt_based_on_campaign_content",
   "status": "pending"
-}'''
+}
+
+IMPORTANT: The imagePrompt should be a detailed description that reflects the campaign's specific message and theme. For example:
+- If the subject mentions "Amazing Features", the image prompt should describe showing the product with highlighted features
+- If it's about "running" or sports, include a person engaged in that activity with the product
+- If it's a discount campaign, show the product with price tags or sale badges
+- Make the image prompt contextual and specific to each campaign's unique message'''
                 },
                 {
                     'role': 'user',
@@ -129,11 +136,15 @@ Return a JSON array of campaign objects with the following structure:
 Product: {product.get('name', 'Unknown Product')}
 Strategy: {strategy.get('strategy', 'Standard marketing strategy')}
 Primary Audience: {strategy.get('primaryAudience', 'General audience')}
+Custom Prompt: {strategy.get('customPrompt', '')}
 
 Weekly Schedule:
 {schedule_text}
 
-Each campaign should have compelling subject lines, engaging email content, and specific image prompts for visual generation.'''
+Each campaign should have:
+1. Compelling subject lines
+2. Engaging email content
+3. DETAILED image prompts that match the campaign message (e.g., if subject mentions specific features or activities, the image prompt should describe showing those exact elements)'''
                 }
             ],
             'temperature': 0.7,
@@ -172,6 +183,10 @@ Each campaign should have compelling subject lines, engaging email content, and 
 
         # TEMP VARIABLE: Loop through schedule items with index
         for index, schedule in enumerate(weekly_schedule):
+            # Generate subject first so we can use it for image prompt
+            subject = self._generate_subject(product.get('name', 'Product'),
+                                           schedule['type'], schedule['audience'])
+
             # TEMP VARIABLE: Build individual campaign card
             card = {
                 'id': f"card_{int(datetime.now().timestamp())}_{index}",
@@ -180,14 +195,13 @@ Each campaign should have compelling subject lines, engaging email content, and 
                 'type': schedule['type'],
                 'audience': schedule['audience'],
                 'theme': self._get_theme_for_campaign(schedule['type']),
-                'subject': self._generate_subject(product.get('name', 'Product'),
-                                                schedule['type'], schedule['audience']),
+                'subject': subject,
                 'preview': f"{schedule['day']} {schedule['time']}: {schedule['type']}",
                 'prompt': f"{schedule['type']} email for {schedule['audience']} promoting {product.get('name', 'Product')}",
                 'emailContent': self._generate_email_content(product.get('name', 'Product'),
                                                            schedule['type'], schedule['audience']),
                 'imagePrompt': self._generate_image_prompt(product.get('name', 'Product'),
-                                                         schedule['type']),
+                                                         schedule['type'], subject, schedule['audience']),
                 'status': 'pending'
             }
             campaign_cards.append(card)
@@ -334,19 +348,86 @@ The Segmind Team"""
 
         return templates.get(campaign_type, templates['Primary Campaign'])
 
-    def _generate_image_prompt(self, product_name: str, campaign_type: str) -> str:
-        """Generate image prompt for visual generation."""
-        # TEMP VARIABLE: Base image prompts dictionary
+    def _generate_image_prompt(self, product_name: str, campaign_type: str, subject: str = None, audience: str = None) -> str:
+        """Generate contextual image prompt based on campaign content."""
+
+        # Analyze subject line for contextual clues
+        context_additions = []
+
+        if subject:
+            subject_lower = subject.lower()
+
+            # Activity-based contexts
+            if any(word in subject_lower for word in ['run', 'running', 'sport', 'fitness', 'workout', 'exercise']):
+                context_additions.append("with an athletic person running or exercising")
+            elif any(word in subject_lower for word in ['work', 'office', 'professional', 'business']):
+                context_additions.append("in a modern office setting with a professional using the device")
+            elif any(word in subject_lower for word in ['travel', 'adventure', 'explore']):
+                context_additions.append("in a travel context with scenic backgrounds")
+            elif any(word in subject_lower for word in ['student', 'study', 'learn', 'education']):
+                context_additions.append("with a student in a study environment")
+
+            # Feature-based contexts
+            if any(word in subject_lower for word in ['water', 'waterproof', 'resistant', 'underwater']):
+                context_additions.append("underwater or with water splashing, showcasing water resistance")
+            elif any(word in subject_lower for word in ['camera', 'photo', 'picture']):
+                context_additions.append("showcasing the camera capabilities with sample photos")
+            elif any(word in subject_lower for word in ['speed', 'fast', 'performance', 'powerful']):
+                context_additions.append("with dynamic motion effects suggesting speed and performance")
+            elif any(word in subject_lower for word in ['battery', 'charge', 'power']):
+                context_additions.append("highlighting battery life with charging indicators")
+            elif any(word in subject_lower for word in ['durable', 'tough', 'strong', 'rugged']):
+                context_additions.append("in extreme conditions showing durability and toughness")
+            elif 'feature' in subject_lower or 'amazing' in subject_lower:
+                context_additions.append("with key features highlighted and annotated around the product")
+
+            # Promotional contexts
+            if '50%' in subject_lower or 'half' in subject_lower:
+                context_additions.append("with large bold '50% OFF' badge in vibrant colors, price slash graphics")
+            elif any(word in subject_lower for word in ['discount', 'sale', 'save', '%', 'offer']):
+                # Extract percentage if present
+                percent_match = re.search(r'(\d+)%', subject_lower)
+                if percent_match:
+                    context_additions.append(f"with bold '{percent_match.group(0)} OFF' badge and sale tags")
+                else:
+                    context_additions.append("with prominent discount badges and price tags")
+            elif any(word in subject_lower for word in ['exclusive', 'vip', 'premium', 'limited']):
+                context_additions.append("with luxury golden accents and exclusive badges")
+            elif any(word in subject_lower for word in ['new', 'latest', 'just arrived']):
+                context_additions.append("with 'NEW' badges and fresh, modern styling")
+
+            # Urgency contexts
+            if any(word in subject_lower for word in ['expire', 'ending', 'last chance', 'hurry', 'today only']):
+                context_additions.append("with countdown timer or urgency indicators")
+            elif any(word in subject_lower for word in ['grab', 'don\'t miss', 'act now']):
+                context_additions.append("with action-oriented visual cues and arrows pointing to CTA")
+
+        # Base prompts for each campaign type
         base_prompts = {
-            'Primary Campaign': f"Clean, modern product photography of {product_name} on a minimal white background with soft studio lighting, professional commercial style",
-            'Follow-up': f"{product_name} with a subtle urgency overlay, warm lighting, call-to-action focused design",
-            'Premium Drop': f"Luxury product shot of {product_name} with dramatic lighting, black or dark background, premium feel, exclusive atmosphere",
-            'Weekly Recap': f"Collection layout featuring {product_name} alongside other tech products, organized grid layout, modern tech aesthetic",
-            'Sale Campaign': f"Dynamic sale image of {product_name} with bold red and yellow accents, sale badges, energetic composition",
-            'Promotional Campaign': f"Promotional banner style image of {product_name} with vibrant colors, special offer styling, eye-catching design"
+            'Primary Campaign': f"High-quality product shot of {product_name}",
+            'Follow-up': f"{product_name} with urgency elements",
+            'Premium Drop': f"Luxury presentation of {product_name}",
+            'Weekly Recap': f"Collection featuring {product_name}",
+            'Sale Campaign': f"Sale promotion for {product_name}",
+            'Promotional Campaign': f"Promotional display of {product_name}"
         }
 
-        return base_prompts.get(campaign_type, base_prompts['Primary Campaign'])
+        base_prompt = base_prompts.get(campaign_type, base_prompts['Primary Campaign'])
+
+        # Combine base prompt with contextual additions
+        if context_additions:
+            return f"{base_prompt} {', '.join(context_additions)}, professional photography, high resolution, marketing ready"
+        else:
+            # Fallback to detailed type-specific prompts
+            detailed_prompts = {
+                'Primary Campaign': f"Clean, modern product photography of {product_name} on a minimal white background with soft studio lighting, professional commercial style",
+                'Follow-up': f"{product_name} with a subtle urgency overlay, warm lighting, call-to-action focused design",
+                'Premium Drop': f"Luxury product shot of {product_name} with dramatic lighting, black or dark background, premium feel, exclusive atmosphere",
+                'Weekly Recap': f"Collection layout featuring {product_name} alongside other tech products, organized grid layout, modern tech aesthetic",
+                'Sale Campaign': f"Dynamic sale image of {product_name} with bold red and yellow accents, sale badges, energetic composition",
+                'Promotional Campaign': f"Promotional banner style image of {product_name} with vibrant colors, special offer styling, eye-catching design"
+            }
+            return detailed_prompts.get(campaign_type, detailed_prompts['Primary Campaign'])
 
 
 @router.post("/generate-cards")
@@ -421,6 +502,7 @@ def process_campaign_cards(request: ProcessCardsRequest):
                 enhanced_card['status'] = card.status
             else:
                 # Fallback for any missing cards
+                subject = generator._generate_subject(product_dict.get('name'), card.type, card.audience)
                 enhanced_card = {
                     "id": card.id,
                     "day": card.day,
@@ -428,11 +510,11 @@ def process_campaign_cards(request: ProcessCardsRequest):
                     "type": card.type,
                     "audience": card.audience,
                     "theme": card.theme,
-                    "subject": generator._generate_subject(product_dict.get('name'), card.type, card.audience),
+                    "subject": subject,
                     "preview": f"{card.day} {card.time}: {card.type} for {card.audience}",
                     "prompt": f"{card.type} email for {card.audience} promoting {product_dict.get('name')}",
                     "emailContent": generator._generate_email_content(product_dict.get('name'), card.type, card.audience),
-                    "imagePrompt": generator._generate_image_prompt(product_dict.get('name'), card.type),
+                    "imagePrompt": generator._generate_image_prompt(product_dict.get('name'), card.type, subject, card.audience),
                     "status": card.status
                 }
 

@@ -317,13 +317,25 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
       // Enhanced prompt with custom user input
       const enhancedPrompt = customPrompt ? `${customPrompt}. ` : ''
 
+      // Infer product from prompt if no product is selected
+      let productInfo = selectedProductForPromotion
+      if (!productInfo && customPrompt) {
+        // Try to extract product name from the prompt
+        const productMatch = customPrompt.match(/iPhone \d+ Pro|iPhone|MacBook|iPad|Samsung Galaxy|Pixel|AirPods|Apple Watch/i)
+        productInfo = {
+          name: productMatch ? productMatch[0] : 'Product',
+          category: 'Technology',
+          price: 999
+        }
+      }
+
       // Prepare data for OpenAI API call
       const campaignData = {
-        product: selectedProductForPromotion,
+        product: productInfo || { name: 'Product', category: 'General', price: 0 },
         strategy: {
-          product: selectedProductForPromotion?.name || 'Product',
-          strategy: strategy.strategy,
-          primaryAudience: strategy.primaryAudience,
+          product: productInfo?.name || strategy.product || 'Product',
+          strategy: strategy.strategy || 'Generate compelling email campaigns',
+          primaryAudience: strategy.primaryAudience || 'Target Audience',
           emailType: selectedEmailType,
           customPrompt: enhancedPrompt
         },
@@ -367,6 +379,7 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
           audience: card.audience,
           theme: card.theme || 'Engaging',
           heroImage: card.imagePrompt,
+          imagePrompt: card.imagePrompt,  // Keep both for compatibility
           prompt: card.prompt,
           preview: card.preview || `${card.day} ${card.time}: ${card.type}`,
           status: 'generated',
@@ -938,14 +951,18 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
                       <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
                         <label className="block text-sm font-medium text-gray-900 dark:text-white mb-3">
                           🤖 AI Prompt Editor
-                          <span className="text-xs text-green-600 ml-2">✨ Smart analytics applied</span>
+                          {selectedProductForPromotion ? (
+                            <span className="text-xs text-green-600 ml-2">✨ Smart analytics applied</span>
+                          ) : (
+                            <span className="text-xs text-orange-600 ml-2">⚠️ Enter prompt to generate campaigns</span>
+                          )}
                         </label>
                         <textarea
                           value={customPrompt}
                           onChange={(e) => setCustomPrompt(e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm leading-relaxed"
                           rows={4}
-                          placeholder="AI prompt will be auto-populated with smart insights..."
+                          placeholder="Enter your campaign prompt here (e.g., 'Create a campaign for iPhone 15 Pro highlighting camera features with running imagery')"
                         />
                         <div className="text-xs text-gray-500 mt-2 flex items-center">
                           <span className="mr-2">💡</span>
@@ -1005,6 +1022,11 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
                                         <span className="font-medium">Brief:</span> {card.preview}
                                       </div>
                                     )}
+                                    {card.imagePrompt && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                        <span className="font-medium">Image:</span> {card.imagePrompt}
+                                      </div>
+                                    )}
                                   </div>
                                   <button
                                     onClick={() => removeCampaignCard(card.id)}
@@ -1025,15 +1047,55 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
                         {generatedCampaignCards.length === 0 ? (
                           <button
                             onClick={() => {
-                              if (!strategyRecommendation) {
-                                console.error('Strategy recommendation not available')
+                              // Allow generation with just a prompt
+                              if (!customPrompt || customPrompt.trim() === '') {
+                                alert('Please enter a prompt to generate campaigns')
                                 return
                               }
+
+                              let strategy = strategyRecommendation
+
+                              // Create a basic strategy if none exists (user only entered prompt)
+                              if (!strategy) {
+                                const inferredProduct = customPrompt.match(/iPhone|MacBook|iPad|Samsung|Pixel|product/i)?.[0] || 'Product'
+
+                                strategy = {
+                                  product: inferredProduct,
+                                  primaryAudience: 'General Audience',
+                                  strategy: 'Generate email campaigns based on custom prompt',
+                                  emailStrategy: 'Custom campaign generation',
+                                  timing: ['Monday 10AM', 'Wednesday 2PM'],
+                                  weeklySchedule: [
+                                    {
+                                      day: 'Monday',
+                                      time: '10:00 AM',
+                                      type: 'Primary Campaign',
+                                      audience: 'General Audience',
+                                      emailTheme: 'Promotional'
+                                    },
+                                    {
+                                      day: 'Wednesday',
+                                      time: '2:00 PM',
+                                      type: 'Follow-up',
+                                      audience: 'Interested Users',
+                                      emailTheme: 'Engagement'
+                                    },
+                                    {
+                                      day: 'Friday',
+                                      time: '9:00 AM',
+                                      type: 'Weekly Recap',
+                                      audience: 'All Users',
+                                      emailTheme: 'Newsletter'
+                                    }
+                                  ]
+                                }
+                              }
+
                               const enhancedStrategy = {
-                                ...strategyRecommendation,
+                                ...strategy,
                                 customPrompt: customPrompt || '',
                                 emailType: selectedEmailType,
-                                weeklySchedule: (strategyRecommendation.weeklySchedule || []).map((schedule: any) => ({
+                                weeklySchedule: (strategy.weeklySchedule || []).map((schedule: any) => ({
                                   ...schedule,
                                   emailType: selectedEmailType,
                                   customPrompt: customPrompt
@@ -1041,7 +1103,7 @@ OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on tim
                               }
                               generateCampaignCards(enhancedStrategy)
                             }}
-                            disabled={isGeneratingCards}
+                            disabled={isGeneratingCards || (!customPrompt || customPrompt.trim() === '')}
                             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                           >
                             {isGeneratingCards ? (
