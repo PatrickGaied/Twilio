@@ -64,7 +64,7 @@ class CampaignCardGenerator:
     def generate_campaign_cards(self, product: Dict[str, Any], strategy: Dict[str, Any],
                                weekly_schedule: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Generate campaign cards for a given product and strategy.
+        Generate campaign cards for a given product and strategy using concurrent processing.
 
         Args:
             product: Product information (name, etc.)
@@ -76,11 +76,43 @@ class CampaignCardGenerator:
         """
         if self.openai_api_key:
             try:
-                return self._generate_with_openai(product, strategy, weekly_schedule)
+                return self._generate_with_openai_concurrent(product, strategy, weekly_schedule)
             except Exception as e:
                 print(f"OpenAI generation failed: {e}")
 
         return self._generate_with_templates(product, strategy, weekly_schedule)
+
+    def _generate_with_openai_concurrent(self, product: Dict[str, Any], strategy: Dict[str, Any],
+                                       weekly_schedule: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Generate campaign cards using OpenAI API with concurrent processing."""
+
+        if len(weekly_schedule) <= 1:
+            # For single request, use regular method
+            return self._generate_with_openai(product, strategy, weekly_schedule)
+
+        # Split into smaller batches for concurrent processing
+        batch_size = min(2, len(weekly_schedule))  # Process 2 at a time for faster responses
+
+        # Create threads for parallel generation
+        threads = []
+        results = []
+
+        for i in range(0, len(weekly_schedule), batch_size):
+            batch = weekly_schedule[i:i + batch_size]
+            thread = ReturnThread(
+                target=self._generate_with_openai,
+                args=(product, strategy, batch)
+            )
+            threads.append(thread)
+            thread.start()
+
+        # Collect results from all threads
+        for thread in threads:
+            batch_result = thread.join()
+            if batch_result:
+                results.extend(batch_result)
+
+        return results
 
     def _generate_with_openai(self, product: Dict[str, Any], strategy: Dict[str, Any],
                              weekly_schedule: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -102,13 +134,32 @@ class CampaignCardGenerator:
         is_google_ads = strategy.get('emailType', '').startswith('google-ads')
         campaign_format = 'Google Ads' if is_google_ads else 'Email'
 
+        # Check if this is a strategy insights request
+        is_strategy_request = strategy.get('emailType', '') == 'prompt-generation'
+
         # TEMP VARIABLE: Build API request payload
         payload = {
-            'model': 'gpt-4',
+            'model': 'gpt-3.5-turbo',
             'messages': [
                 {
                     'role': 'system',
-                    'content': f'''You are a marketing campaign generator. Create {campaign_format.lower()} campaign cards based on the provided strategy.
+                    'content': f'''You are a marketing strategy analyst. Generate strategic insights and analytics recommendations.
+
+For STRATEGY INSIGHTS, return a JSON array with this structure:
+{{
+  "id": "unique_id",
+  "day": "day_name",
+  "time": "time",
+  "type": "Strategy Insights",
+  "audience": "target_audience",
+  "theme": "Analytics & Optimization",
+  "subject": "Strategic Campaign Insights",
+  "preview": "Key insights and timing recommendations",
+  "prompt": "strategy_analysis_prompt",
+  "emailContent": "ANALYTICS INSIGHTS: Optimal timing analysis, audience engagement patterns, conversion windows, performance benchmarks. CAMPAIGN STRATEGY: Hero image recommendations, frequency suggestions, targeting optimization, cross-sell opportunities.",
+  "imagePrompt": "Professional hero image strategy description",
+  "status": "pending"
+}}''' if is_strategy_request else f'''You are a marketing campaign generator. Create {campaign_format.lower()} campaign cards based on the provided strategy.
 
 For EMAIL campaigns, return a JSON array with this structure:
 {{
@@ -146,7 +197,7 @@ For GOOGLE ADS campaigns, return a JSON array with this structure:
                 },
                 {
                     'role': 'user',
-                    'content': f'''Generate {campaign_format.lower()} campaign cards for:
+                    'content': f'''{"Generate strategic insights and analytics for:" if is_strategy_request else f"Generate {campaign_format.lower()} campaign cards for:"}
 Product: {product.get('name', 'Unknown Product')}
 Strategy: {strategy.get('strategy', 'Standard marketing strategy')}
 Primary Audience: {strategy.get('primaryAudience', 'General audience')}
@@ -156,20 +207,25 @@ Custom Instructions: {strategy.get('customPrompt', 'None')}
 Weekly Schedule:
 {schedule_text}
 
-{f"""Generate GOOGLE ADS campaigns with:
-- Short, compelling headlines (max 30 characters)
-- Concise ad copy focused on conversion
-- Visual descriptions optimized for {strategy.get('emailType', '').replace('google-ads-', '')} format
-- Clear call-to-action text
-- Format-specific layout recommendations""" if is_google_ads else """Generate EMAIL campaigns with:
-- Compelling subject lines
-- Engaging email content
-- Specific image prompts for visual generation
-- Professional email formatting"""}'''
+{"""Provide strategic analytics including:
+- Optimal timing analysis for target audience
+- Hero image strategy recommendations
+- Campaign frequency and duration suggestions
+- Audience engagement patterns
+- Conversion optimization tips
+- Performance benchmarks and warnings
+- Cross-sell opportunities
+
+Focus on insights and recommendations, not full campaign content.""" if is_strategy_request else f"""{"Generate GOOGLE ADS campaigns with:" if is_google_ads else "Generate EMAIL campaigns with:"}
+{f"- Short, compelling headlines (max 30 characters)" if is_google_ads else "- Compelling subject lines"}
+{f"- Concise ad copy focused on conversion" if is_google_ads else "- Engaging email content"}
+{f"- Visual descriptions optimized for {strategy.get('emailType', '').replace('google-ads-', '')} format" if is_google_ads else "- Specific image prompts for visual generation"}
+{f"- Clear call-to-action text" if is_google_ads else "- Professional email formatting"}
+{f"- Format-specific layout recommendations" if is_google_ads else ""}"""}'''
                 }
             ],
             'temperature': 0.7,
-            'max_tokens': 2000,
+            'max_tokens': 800,  # Reduced for faster responses
         }
 
         # TEMP VARIABLE: Store API response

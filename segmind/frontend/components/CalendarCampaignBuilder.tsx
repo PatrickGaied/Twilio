@@ -105,13 +105,21 @@ export default function CalendarCampaignBuilder({ onBack }: CalendarCampaignBuil
           primaryAudience: contextData.audience || 'General Audience',
           strategy: `Generate smart campaign prompt for ${product.name} targeting ${contextData.audience}`,
           emailType: 'prompt-generation',
-          customPrompt: `Create a strategic campaign prompt for ${product.name} considering:
-- Target audience: ${contextData.audience}
-- Product details: ${product.brand} ${product.name} at $${product.price}
-- Visual guidance: ${contextData.visualGuidance || 'Use professional product photography'}
-- Performance warnings: ${contextData.warnings || 'Optimize for conversion'}
-- Cross-sell opportunity: ${contextData.crossSellOpportunity || 'None'}
-Generate a concise, actionable prompt for email campaigns.`
+          customPrompt: `Generate strategic campaign insights and analytics for ${product.name}:
+
+ANALYTICS INSIGHTS:
+- Analyze optimal timing for ${contextData.audience} segment
+- Recommend hero image strategy for ${product.name}
+- Suggest campaign frequency and duration
+- Identify peak engagement windows
+
+CAMPAIGN STRATEGY:
+- Focus: Promote ${product.name} to ${contextData.audience}
+- Hero Image: ${contextData.visualGuidance || 'Professional product photography with lifestyle context'}
+- Cross-sell: ${contextData.crossSellOpportunity || 'None identified'}
+- Performance optimization: ${contextData.warnings || 'Standard conversion optimization'}
+
+OUTPUT REQUIRED: Strategic recommendations only (no email content). Focus on timing, targeting insights, and visual strategy.`
         },
         weeklySchedule: [{
           day: 'Today',
@@ -552,6 +560,95 @@ Generate a concise, actionable prompt for email campaigns.`
     setEditingSchedule(null)
   }
 
+  const autoPopulateMoreDays = () => {
+    if (!strategyRecommendation || !selectedProductForPromotion) return
+
+    const currentSchedule = strategyRecommendation.weeklySchedule || []
+
+    // Extract existing date strings for comparison (e.g., "Monday 27", "Wednesday 29")
+    const existingDays = currentSchedule.map((s: any) => s.day.toLowerCase())
+
+    // Get current date info
+    const now = new Date()
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const currentDay = now.getDate()
+
+    // Define campaign types and audiences to rotate through
+    const campaignTypes = [
+      'Primary Campaign',
+      'Follow-up Campaign',
+      'Cross-sell Campaign',
+      'Engagement Campaign',
+      'Retargeting Campaign',
+      'Newsletter Campaign'
+    ]
+
+    const audiences = [
+      'Window Shoppers',
+      'Previous Customers',
+      'Cart Abandoners',
+      'Engaged Users',
+      'New Subscribers'
+    ]
+
+    const times = ['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM']
+
+    // Generate remaining days for the month
+    const newScheduleEntries = []
+    let campaignIndex = 0
+
+    // Start from tomorrow and go through the next 20 days to ensure we get enough weekdays
+    for (let i = 1; i <= 20; i++) {
+      const futureDate = new Date(now)
+      futureDate.setDate(now.getDate() + i)
+
+      // Stop if we've exceeded this month and next month
+      if (futureDate.getMonth() > now.getMonth() + 1) break
+
+      const dayName = futureDate.toLocaleDateString('en-US', { weekday: 'long' })
+      const dayNumber = futureDate.getDate()
+      const monthName = futureDate.toLocaleDateString('en-US', { month: 'short' })
+
+      // Create full day string like "Monday 27" or "Tuesday 3 Nov" for next month
+      const fullDayString = futureDate.getMonth() === now.getMonth()
+        ? `${dayName} ${dayNumber}`
+        : `${dayName} ${dayNumber} ${monthName}`
+
+      // Skip weekends for most campaigns
+      if (futureDate.getDay() === 0 || futureDate.getDay() === 6) continue
+
+      // Skip if this exact day already exists
+      if (existingDays.includes(fullDayString.toLowerCase())) continue
+
+      // Stop after adding 10 new campaign days
+      if (newScheduleEntries.length >= 10) break
+
+      const campaignType = campaignTypes[campaignIndex % campaignTypes.length]
+      const audience = audiences[campaignIndex % audiences.length]
+      const time = times[campaignIndex % times.length]
+
+      newScheduleEntries.push({
+        day: fullDayString,
+        time: time,
+        type: campaignType,
+        audience: audience,
+        heroImageDesc: `${selectedProductForPromotion.name} optimized for ${audience.toLowerCase()}, ${campaignType.toLowerCase()} style`,
+        emailTheme: `${monthName} ${dayNumber} - ${campaignType}`
+      })
+
+      campaignIndex++
+    }
+
+    // Update strategy recommendation with new schedule
+    const updatedStrategy = {
+      ...strategyRecommendation,
+      weeklySchedule: [...currentSchedule, ...newScheduleEntries],
+      expectedCampaigns: currentSchedule.length + newScheduleEntries.length
+    }
+
+    setStrategyRecommendation(updatedStrategy)
+  }
+
   return (
     <div className="max-w-full mx-auto">
       {/* Flow Header */}
@@ -861,29 +958,39 @@ Generate a concise, actionable prompt for email campaigns.`
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <h5 className="font-medium text-gray-900 dark:text-white text-sm">Generated Campaigns ({generatedCampaignCards.length})</h5>
-                            <button
-                              onClick={() => {
-                                if (!strategyRecommendation) {
-                                  console.error('Strategy recommendation not available')
-                                  return
-                                }
-                                const enhancedStrategy = {
-                                  ...strategyRecommendation,
-                                  customPrompt: customPrompt || '',
-                                  emailType: selectedEmailType,
-                                  weeklySchedule: (strategyRecommendation.weeklySchedule || []).map((schedule: any) => ({
-                                    ...schedule,
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => {
+                                  if (!strategyRecommendation) {
+                                    console.error('Strategy recommendation not available')
+                                    return
+                                  }
+                                  const enhancedStrategy = {
+                                    ...strategyRecommendation,
+                                    customPrompt: customPrompt || '',
                                     emailType: selectedEmailType,
-                                    customPrompt: customPrompt
-                                  }))
-                                }
-                                generateCampaignCards(enhancedStrategy)
-                              }}
-                              disabled={isGeneratingCards}
-                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-                            >
-                              🔄 Regenerate
-                            </button>
+                                    weeklySchedule: (strategyRecommendation.weeklySchedule || []).map((schedule: any) => ({
+                                      ...schedule,
+                                      emailType: selectedEmailType,
+                                      customPrompt: customPrompt
+                                    }))
+                                  }
+                                  generateCampaignCards(enhancedStrategy)
+                                }}
+                                disabled={isGeneratingCards}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                              >
+                                🔄 Regenerate
+                              </button>
+                              <button
+                                onClick={autoPopulateMoreDays}
+                                disabled={!strategyRecommendation || !selectedProductForPromotion}
+                                className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                                title="Add more campaign days to the month"
+                              >
+                                📅 More Days
+                              </button>
+                            </div>
                           </div>
                           <div className="space-y-1 max-h-48 overflow-y-auto">
                             {generatedCampaignCards.map((card) => (
@@ -893,6 +1000,11 @@ Generate a concise, actionable prompt for email campaigns.`
                                     <div className="font-medium text-blue-800 dark:text-blue-200 text-xs">{card.type}</div>
                                     <div className="text-xs text-blue-600 dark:text-blue-400">{card.day} {card.time}</div>
                                     <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{card.subject}</div>
+                                    {card.preview && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        <span className="font-medium">Brief:</span> {card.preview}
+                                      </div>
+                                    )}
                                   </div>
                                   <button
                                     onClick={() => removeCampaignCard(card.id)}
@@ -1257,6 +1369,14 @@ Generate a concise, actionable prompt for email campaigns.`
                       >
                         🔄 Regenerate
                       </button>
+                      <button
+                        onClick={autoPopulateMoreDays}
+                        disabled={!strategyRecommendation || !selectedProductForPromotion}
+                        className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                        title="Add more campaign days to the month"
+                      >
+                        📅 Populate More Days
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1275,6 +1395,16 @@ Generate a concise, actionable prompt for email campaigns.`
                             <div className="text-xs text-blue-600 dark:text-blue-400">{card.day} {card.time}</div>
                             <div className="text-xs text-gray-500 truncate">{card.audience}</div>
                             <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium break-words">{card.subject}</div>
+                            {card.preview && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span className="font-medium">Brief:</span> {card.preview}
+                              </div>
+                            )}
+                            {card.imagePrompt && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span className="font-medium">Image:</span> {card.imagePrompt}
+                              </div>
+                            )}
                           </div>
                           <button
                             onClick={() => removeCampaignCard(card.id)}

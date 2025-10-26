@@ -19,7 +19,19 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
   const [customPrompts, setCustomPrompts] = useState<{[key: string]: string}>({})
   const [showPromptEditor, setShowPromptEditor] = useState<string | null>(null)
   const [tempPrompt, setTempPrompt] = useState('')
+  const [imageGenerationPrompt, setImageGenerationPrompt] = useState('')
+  const [showHeadlineEditor, setShowHeadlineEditor] = useState(false)
+  const [tempHeadline, setTempHeadline] = useState('')
   const [isGeneratingContent, setIsGeneratingContent] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [generatedImage, setGeneratedImage] = useState('')
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+
+  // Available images from your Images folder
+  const availableImages = [
+    '/Images/horizontal-samsung-snow.png',
+    '/Images/square-samsung-snow.png'
+  ]
 
   // Mock product data
   const availableProducts = [
@@ -131,7 +143,7 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
         }]
       }
 
-      const response = await fetch('/api/campaign-generator/generate-cards', {
+      const response = await fetch('http://localhost:8000/api/campaign-generator/generate-cards', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,6 +164,14 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
         setPopupHeadline(card.subject || `${selectedProductData[0]?.name} - Limited Time!`)
         setPopupCTA(card.emailContent?.match(/\[(.*?)\]/)?.[1] || 'Shop Now')
         setPopupDescription(card.preview || `Discover the amazing features of ${selectedProductData[0]?.name}`)
+        // Capture image generation prompt
+        setImageGenerationPrompt(card.imagePrompt || `Generate a ${aspectRatio} ${popupShape} popup ad for ${selectedProductData[0]?.name}`)
+
+        // If patterns are selected, show headline editor for modification
+        if (selectedPatternData.length > 0) {
+          setTempHeadline(card.subject || `${selectedProductData[0]?.name} - Limited Time!`)
+          setShowHeadlineEditor(true)
+        }
       } else {
         // Fallback generation
         const fallbackContext = selectedPatternData.length > 0
@@ -181,6 +201,20 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
     } finally {
       setIsGeneratingContent(false)
     }
+  }
+
+  const handleGenerateImage = async () => {
+    setIsGeneratingImage(true)
+
+    // Simulate loading time
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Cycle through available images
+    const currentImage = availableImages[currentImageIndex]
+    setGeneratedImage(currentImage)
+    setCurrentImageIndex((currentImageIndex + 1) % availableImages.length)
+
+    setIsGeneratingImage(false)
   }
 
   const handleApproveAndSchedule = async () => {
@@ -213,7 +247,7 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
 
     try {
       // Generate campaign using the optimized Python API
-      const response = await fetch('/api/campaign-generator/generate-cards', {
+      const response = await fetch('http://localhost:8000/api/campaign-generator/generate-cards', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -383,6 +417,29 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
               )}
             </div>
 
+            {/* Generate Image Button */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2 text-blue-600" />
+                    Generate Visual
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Click to generate and cycle through popup images
+                  </p>
+                </div>
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors flex items-center"
+                >
+                  <ImageIcon className={`h-4 w-4 mr-2 ${isGeneratingImage ? 'animate-spin' : ''}`} />
+                  {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+                </button>
+              </div>
+            </div>
+
             {/* Popup Content Form */}
             <div className="space-y-4">
               <div>
@@ -435,8 +492,11 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                 <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Google Ads Format</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { ratio: '9:16', label: 'Vertical', desc: 'Stories/Feed' },
-                    { ratio: '16:9', label: 'Horizontal', desc: 'Banner/Display' }
+                    { ratio: '9:16', label: 'Stories', desc: 'Instagram/TikTok' },
+                    { ratio: '16:9', label: 'Banner', desc: 'Horizontal Display' },
+                    { ratio: '2:5', label: 'Skyscraper', desc: 'Tall Vertical' },
+                    { ratio: '1:2', label: 'Mobile', desc: 'Mobile Interstitial' },
+                    { ratio: '1:1', label: 'Square', desc: 'Social Posts' }
                   ].map(({ ratio, label, desc }) => (
                     <button
                       key={ratio}
@@ -475,34 +535,59 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                     aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9'
                   }}
                 >
-                  <div className={`h-full flex flex-col justify-center ${
+                  <div className={`h-full flex flex-col ${
                     popupShape === 'circle' ? 'p-4' : 'p-6'
                   }`}>
-                    <div className="text-center">
-                      <div className={`font-bold text-gray-900 dark:text-white mb-2 ${
-                        aspectRatio === '16:9' ? 'text-base' :
-                        aspectRatio === '4:3' ? 'text-lg' : 'text-lg'
-                      }`}>
-                        {popupHeadline || 'Your Headline Here'}
+                    {/* Generated Image or Loading */}
+                    {isGeneratingImage ? (
+                      <div className="flex-1 flex items-center justify-center mb-4">
+                        <div className="text-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Generating image...</div>
+                        </div>
                       </div>
-                      <div className={`text-gray-600 dark:text-gray-400 mb-4 ${
-                        aspectRatio === '16:9' ? 'text-xs' :
-                        aspectRatio === '4:3' ? 'text-sm' : 'text-sm'
-                      }`}>
-                        {popupDescription || 'Your description will appear here...'}
+                    ) : generatedImage ? (
+                      <div className="flex-1 flex items-center justify-center mb-4">
+                        <img
+                          src={generatedImage}
+                          alt="Generated popup image"
+                          className="max-w-full max-h-full object-contain rounded"
+                        />
                       </div>
-                      <button className={`bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors ${
-                        aspectRatio === '16:9' ? 'px-3 py-1 text-xs' :
-                        aspectRatio === '4:3' ? 'px-4 py-2 text-sm' : 'px-4 py-2 text-sm'
-                      }`}>
-                        {popupCTA || 'Call to Action'}
-                      </button>
+                    ) : null}
+
+                    {/* Text Content */}
+                    <div className={`text-center ${(generatedImage || isGeneratingImage) ? '' : 'flex-1 flex flex-col justify-center'}`}>
+                      {popupHeadline && (
+                        <div className={`font-bold text-gray-900 dark:text-white mb-2 ${
+                          aspectRatio === '16:9' ? 'text-base' :
+                          aspectRatio === '4:3' ? 'text-lg' : 'text-lg'
+                        }`}>
+                          {popupHeadline}
+                        </div>
+                      )}
+                      {popupDescription && (
+                        <div className={`text-gray-600 dark:text-gray-400 mb-4 ${
+                          aspectRatio === '16:9' ? 'text-xs' :
+                          aspectRatio === '4:3' ? 'text-sm' : 'text-sm'
+                        }`}>
+                          {popupDescription}
+                        </div>
+                      )}
+                      {popupCTA && (
+                        <button className={`bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors ${
+                          aspectRatio === '16:9' ? 'px-3 py-1 text-xs' :
+                          aspectRatio === '4:3' ? 'px-4 py-2 text-sm' : 'px-4 py-2 text-sm'
+                        }`}>
+                          {popupCTA}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Aspect Ratio Indicator */}
-                <div className="mt-3 text-center">
+                {/* Aspect Ratio and Image Indicators */}
+                <div className="mt-3 text-center space-y-2">
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
                     {aspectRatio} • {
                       aspectRatio === '1:1' ? '320x320px' :
@@ -510,6 +595,11 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                       '384x216px'
                     }
                   </span>
+                  {generatedImage && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Image: {generatedImage.split('/').pop()} ({currentImageIndex}/{availableImages.length})
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -586,6 +676,24 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
               ))}
             </div>
           </div>
+
+          {/* Image Generation Prompt Display */}
+          {imageGenerationPrompt && (
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20">
+              <div className="mb-2">
+                <div className="flex items-center mb-2">
+                  <ImageIcon className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Image Generation Prompt</span>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded border">
+                  {imageGenerationPrompt}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  This prompt will be used to generate the visual for your popup ad
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Approve & Schedule Button */}
           <div className="p-3 border-t border-gray-200 dark:border-gray-700">
@@ -675,6 +783,68 @@ export default function PopupCampaignBuilder({ onBack, onSchedulePopup }: PopupC
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
               >
                 Save Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Headline Editor Modal */}
+      {showHeadlineEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Modify Generated Headline
+              </h3>
+              <button
+                onClick={() => setShowHeadlineEditor(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Based on selected patterns: <span className="font-medium text-gray-900 dark:text-white">
+                  {selectedOCRPatterns.map(id => ocrPatterns.find(p => p.id === id)?.description).join(', ')}
+                </span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Generated Headline
+              </label>
+              <input
+                type="text"
+                value={tempHeadline}
+                onChange={(e) => setTempHeadline(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-sm"
+                placeholder="Edit your headline..."
+              />
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Modify the AI-generated headline to better match your vision
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowHeadlineEditor(false)}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setPopupHeadline(tempHeadline)
+                  setShowHeadlineEditor(false)
+                }}
+                disabled={!tempHeadline.trim()}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors"
+              >
+                Apply Headline
               </button>
             </div>
           </div>
