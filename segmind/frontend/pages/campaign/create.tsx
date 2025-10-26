@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { ArrowLeft, Target, Mail, Plus, Check, Zap, Wand2, Calendar, Users, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Target, Mail, Plus, Check, Zap, Wand2, Calendar, Users, TrendingUp, ArrowRight } from 'lucide-react'
 import ThemeToggle from '../../components/ThemeToggle'
 
 interface Product {
@@ -86,43 +86,48 @@ export default function CreateCampaignPage() {
     return underperforming
   }
 
-  // Generate AI campaign calendar based on product and segment
+  // Generate AI campaign calendar based on successful trends
   const generateAICampaignCalendar = () => {
-    if (!segment || !initialProduct) return []
+    if (!initialProduct) return []
 
+    // Base schedule on what works across segments for this product
     const schedules = [
       {
         type: 'Email',
-        title: `Exclusive ${initialProduct} Launch for ${segment}`,
-        description: 'Premium positioning email with early access offer',
-        date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        title: `${initialProduct} - Product Spotlight`,
+        description: 'Launch announcement to all segments',
+        segments: ['High Converters', 'Loyal Customers'],
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000),
         time: '10:00 AM',
         priority: 'high',
         color: 'purple'
       },
       {
         type: 'Push',
-        title: `Limited Time: ${initialProduct} Flash Sale`,
-        description: 'Urgency-driven push notification for high converters',
-        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days
+        title: `Flash Sale: ${initialProduct}`,
+        description: 'Limited time offer to drive urgency',
+        segments: ['Window Shoppers', 'Cart Abandoners'],
+        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         time: '6:00 PM',
         priority: 'high',
         color: 'red'
       },
       {
         type: 'Email',
-        title: `Why ${segment} Love ${initialProduct}`,
-        description: 'Social proof and testimonials email',
-        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days
+        title: `Bundle Deal: ${initialProduct} + Accessories`,
+        description: 'Cross-sell complementary products',
+        segments: ['High Converters', 'Loyal Customers'],
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         time: '2:00 PM',
         priority: 'medium',
         color: 'blue'
       },
       {
         type: 'SMS',
-        title: `Final Hours: ${initialProduct} Deal`,
-        description: 'Last chance SMS for maximum urgency',
-        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        title: `Last Chance: ${initialProduct}`,
+        description: 'Final push to remaining segments',
+        segments: ['All Segments'],
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         time: '8:00 PM',
         priority: 'high',
         color: 'orange'
@@ -428,17 +433,30 @@ export default function CreateCampaignPage() {
     router.push('/campaigns')
   }
 
-  // Auto-select initial product if provided
+  // Auto-select initial product and brand if provided
   useEffect(() => {
     if (initialProduct && typeof initialProduct === 'string') {
-      const matchingProduct = products.find(p =>
+      // Auto-select brand based on product
+      const productName = initialProduct.toLowerCase()
+      if (productName.includes('iphone') || productName.includes('macbook') || productName.includes('ipad') || productName.includes('airpods')) {
+        setSelectedBrands(['apple'])
+      } else if (productName.includes('samsung') || productName.includes('galaxy')) {
+        setSelectedBrands(['samsung'])
+      }
+
+      const matchingProduct = allProducts.find(p =>
         p.name.toLowerCase().includes(initialProduct.toLowerCase())
       )
       if (matchingProduct && !selectedProducts.includes(matchingProduct.id)) {
         setSelectedProducts([matchingProduct.id])
       }
+
+      // Skip to tone selection when coming from insights
+      if (segment && initialProduct) {
+        setStep('tone')
+      }
     }
-  }, [initialProduct, products])
+  }, [initialProduct, segment])
 
   return (
     <>
@@ -502,18 +520,72 @@ export default function CreateCampaignPage() {
                   </div>
                 </div>
 
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-700">
-                  <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 flex items-center mb-2">
-                    💡 Why This Works
+                {/* Interactive Campaign Builder */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                  <h3 className="text-sm font-semibold text-purple-800 dark:text-purple-200 flex items-center mb-3">
+                    🚀 Quick Campaign Builder
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-                    {segment === 'High Converters' && 'High Converters show exceptional affinity for premium Apple products'}
-                    {segment === 'Loyal Customers' && 'Loyal Customers prefer trusted brands and proven quality'}
-                    {segment === 'Window Shoppers' && 'Window Shoppers respond well to value propositions and deals'}
-                  </p>
-                  <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                    Create premium positioning campaigns emphasizing exclusivity and advanced features
-                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Email Campaign */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                          <Mail className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Email Campaign</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Create email series for {initialProduct}</p>
+                      <div className="text-xs text-purple-600 dark:text-purple-400">
+                        • Subject line suggestions
+                        • Multi-segment targeting
+                        • Scheduled delivery
+                      </div>
+                    </div>
+
+                    {/* Push Campaign */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-orange-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+                          <Zap className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Push Campaign</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Urgent notifications for {initialProduct}</p>
+                      <div className="text-xs text-orange-600 dark:text-orange-400">
+                        • Flash sale alerts
+                        • Limited time offers
+                        • High conversion focus
+                      </div>
+                    </div>
+
+                    {/* Multi-Channel */}
+                    <div
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 border cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+                      onClick={() => setStep('tone')}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                          <Target className="h-4 w-4 text-white" />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white mb-2">Multi-Channel</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Email + Push + SMS sequence</p>
+                      <div className="text-xs text-blue-600 dark:text-blue-400">
+                        • 7-day campaign calendar
+                        • All segments covered
+                        • Maximum reach
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Similar Products & Underperformers */}
@@ -567,9 +639,9 @@ export default function CreateCampaignPage() {
                     <div>
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
                         <Calendar className="h-5 w-5 mr-2 text-blue-600" />
-                        🤖 AI-Generated Campaign Calendar
+                        🤖 Multi-Segment Campaign Calendar
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Optimized schedule for {segment} targeting {initialProduct}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Sell {initialProduct} across all segments using proven trends</p>
                     </div>
                   </div>
 
@@ -599,7 +671,17 @@ export default function CreateCampaignPage() {
                             {schedule.priority}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{schedule.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{schedule.description}</p>
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Target Segments:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {schedule.segments.map((seg, segIndex) => (
+                              <span key={segIndex} className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-full text-gray-700 dark:text-gray-300">
+                                {seg}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                           <span>{schedule.date.toLocaleDateString()}</span>
                           <span>{schedule.time}</span>
@@ -610,12 +692,7 @@ export default function CreateCampaignPage() {
 
                   <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      💡 <strong>AI Insight:</strong> {segment} respond best to {
-                        segment === 'High Converters' ? 'premium messaging with technical details and exclusivity angles' :
-                        segment === 'Loyal Customers' ? 'personalized communications emphasizing trust and rewards' :
-                        segment === 'Window Shoppers' ? 'value-driven content with social proof and limited-time offers' :
-                        'targeted messaging with appropriate incentives'
-                      }
+                      💡 <strong>Strategy:</strong> Start with high-value segments (Day 1), create urgency for deal-seekers (Day 3), then cross-sell accessories (Day 5), finish with broad push to everyone (Day 7). This maximizes revenue across all customer types.
                     </p>
                   </div>
                 </div>
@@ -624,59 +701,89 @@ export default function CreateCampaignPage() {
           </div>
         )}
 
-        {/* Progress Steps */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center space-x-6">
-            <div className={`flex items-center space-x-2 ${step === 'brand' ? 'text-purple-600' : selectedBrands.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'brand' ? 'bg-purple-600 text-white' :
-                selectedBrands.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedBrands.length > 0 && step !== 'brand' ? <Check className="h-4 w-4" /> : '1'}
+        {/* Progress Steps - Hide when coming from insights */}
+        {!affinityData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-center space-x-6">
+              <div className={`flex items-center space-x-2 ${step === 'brand' ? 'text-purple-600' : selectedBrands.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'brand' ? 'bg-purple-600 text-white' :
+                  selectedBrands.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedBrands.length > 0 && step !== 'brand' ? <Check className="h-4 w-4" /> : '1'}
+                </div>
+                <span className="font-medium">Select Brands</span>
               </div>
-              <span className="font-medium">Select Brands</span>
-            </div>
 
-            <div className={`h-0.5 w-12 ${selectedBrands.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+              <div className={`h-0.5 w-12 ${selectedBrands.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
 
-            <div className={`flex items-center space-x-2 ${step === 'products' ? 'text-purple-600' : selectedProducts.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'products' ? 'bg-purple-600 text-white' :
-                selectedProducts.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedProducts.length > 0 && step !== 'products' ? <Check className="h-4 w-4" /> : '2'}
+              <div className={`flex items-center space-x-2 ${step === 'products' ? 'text-purple-600' : selectedProducts.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'products' ? 'bg-purple-600 text-white' :
+                  selectedProducts.length > 0 ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedProducts.length > 0 && step !== 'products' ? <Check className="h-4 w-4" /> : '2'}
+                </div>
+                <span className="font-medium">Select Products</span>
               </div>
-              <span className="font-medium">Select Products</span>
-            </div>
 
-            <div className={`h-0.5 w-12 ${selectedProducts.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+              <div className={`h-0.5 w-12 ${selectedProducts.length > 0 ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
 
-            <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'tone' ? 'bg-purple-600 text-white' :
-                selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '3'}
+              <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'tone' ? 'bg-purple-600 text-white' :
+                  selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '3'}
+                </div>
+                <span className="font-medium">Choose Tone</span>
               </div>
-              <span className="font-medium">Choose Tone</span>
-            </div>
 
-            <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+              <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
 
-            <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-              }`}>
-                4
+              <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  4
+                </div>
+                <span className="font-medium">Review & Create</span>
               </div>
-              <span className="font-medium">Review & Create</span>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Simplified Steps for Insight-based campaigns */}
+        {affinityData && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-center space-x-6">
+              <div className={`flex items-center space-x-2 ${step === 'tone' ? 'text-purple-600' : selectedTone ? 'text-green-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'tone' ? 'bg-purple-600 text-white' :
+                  selectedTone ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  {selectedTone && step !== 'tone' ? <Check className="h-4 w-4" /> : '1'}
+                </div>
+                <span className="font-medium">Choose Tone</span>
+              </div>
+
+              <div className={`h-0.5 w-12 ${selectedTone ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'}`} />
+
+              <div className={`flex items-center space-x-2 ${step === 'review' ? 'text-purple-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  step === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                }`}>
+                  2
+                </div>
+                <span className="font-medium">Review & Create</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          {step === 'brand' && (
+          {step === 'brand' && !affinityData && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -781,7 +888,7 @@ export default function CreateCampaignPage() {
             </div>
           )}
 
-          {step === 'products' && (
+          {step === 'products' && !affinityData && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
