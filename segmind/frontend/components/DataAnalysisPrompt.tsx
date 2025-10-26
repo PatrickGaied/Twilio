@@ -21,11 +21,14 @@ export default function DataAnalysisPrompt({ onSubmit }: DataAnalysisPromptProps
   }
 
   const examplePrompts = [
-    "Create an ad campaign based on my data",
-    "Why did iPhone 15 Pro perform so well?",
-    "What segments should I target for holiday campaigns?",
-    "Analyze the cart abandoners segment behavior",
-    "Create email campaigns for high converters"
+    "Tell me about my High Converters audience",
+    "What motivates Window Shoppers to buy?",
+    "Who is the iPhone 15 Pro target audience?",
+    "How can I reduce cart abandonment rates?",
+    "What do Loyal Customers want from my brand?",
+    "Samsung Galaxy S24 audience insights",
+    "Best messaging for each customer segment",
+    "How to re-engage At Risk customers?"
   ]
 
   return (
@@ -35,8 +38,8 @@ export default function DataAnalysisPrompt({ onSubmit }: DataAnalysisPromptProps
           <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Data Analysis</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Ask questions about your data or request campaign creation</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Audience Insights</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Understand your customers better - ask about segments, products, and audience behavior</p>
         </div>
       </div>
 
@@ -45,7 +48,13 @@ export default function DataAnalysisPrompt({ onSubmit }: DataAnalysisPromptProps
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ask me anything about your data... e.g., 'Create an ad campaign based on my high converters' or 'Why did Samsung Galaxy perform better than expected?'"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit(e)
+              }
+            }}
+            placeholder="Ask about your audience... e.g., 'Tell me about High Converters' or 'Who buys the iPhone 15 Pro?'"
             className="w-full p-4 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             rows={3}
           />

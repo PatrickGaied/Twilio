@@ -6,7 +6,6 @@ import ProductSegmentInsights from '../components/ProductSegmentInsights'
 import CampaignModal from '../components/CampaignModal'
 import PopupAdCreator from '../components/PopupAdCreator'
 import ThemeToggle from '../components/ThemeToggle'
-import AIChat from '../components/AIChat'
 
 interface CustomerSegment {
   id: string
@@ -378,11 +377,6 @@ export default function SegmentsPage() {
           productName={popupAdModal.productName}
         />
 
-        {/* AI Chat */}
-        <AIChat
-          pageData={getChatData()}
-          context="customer segments and product performance data"
-        />
       </div>
     </>
   )

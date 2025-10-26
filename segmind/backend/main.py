@@ -13,6 +13,7 @@ from routes.products import router as products_router, analytics_router as produ
 from routes.insights import router as insights_router
 from routes.campaigns import router as campaigns_router
 from routes.templates import router as templates_router
+from audience_insights import router as audience_insights_router
 
 app = FastAPI(title="Segmind MVP - Customer Messaging Platform")
 
@@ -32,6 +33,7 @@ app.include_router(products_analytics_router)
 app.include_router(insights_router)
 app.include_router(campaigns_router)
 app.include_router(templates_router)
+app.include_router(audience_insights_router, prefix="/api")
 
 @app.get("/health")
 def health_check():
