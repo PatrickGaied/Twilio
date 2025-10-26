@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "day": "Monday",
+    "time": "10:00 AM",
+    "type": "Primary Campaign",
+    "audience": "Window Shoppers",
+    "theme": "MacBook Pro Unveiling",
+    "subject": "Discover the Power of MacBook Pro!",
+    "preview": "Experience the best of technology with MacBook Pro.",
+    "prompt": "Generate an engaging email introducing the MacBook Pro to window shoppers",
+    "emailContent": "Hello Tech Enthusiast, \n\nIt's time to level up your tech game with the new MacBook Pro. Its sleek design, powerful performance, and innovative features are sure to meet your tech needs. Don't wait, explore the world of MacBook Pro now!",
+    "imagePrompt": "Generate an image of MacBook Pro with exciting features highlighted",
+    "status": "pending"
+  },
+  {
+    "id": "2",
+    "day": "Wednesday",
+    "time": "2:00 PM",
+    "type": "Follow-up Campaign",
+    "audience": "Cart Abandoners",
+    "theme": "MacBook Pro Reminder",
+    "subject": "You're One Step Away from Owning a MacBook Pro!",
+    "preview": "Get back to your cart and complete your MacBook Pro purchase.",
+    "prompt": "Generate an enticing email reminding cart abandoners to complete their MacBook Pro purchase",
+    "emailContent": "Hey there, \n\nYou left a MacBook Pro in your cart. Don't miss out on experiencing the ultimate tech power. Complete your purchase now and step into the world of endless possibilities with MacBook Pro.",
+    "imagePrompt": "Generate an image of MacBook Pro in a shopping cart",
+    "status": "pending"
+  },
+  {
+    "id": "3",
+    "day": "Friday",
+    "time": "9:00 AM",
+    "type": "Premium Drop Campaign",
+    "audience": "High Converters",
+    "theme": "MacBook Pro Special Offer",
+    "subject": "Exclusive Offer on MacBook Pro Just for You!",
+    "preview": "Unlock an exclusive deal on MacBook Pro now!",
+    "prompt": "Generate a persuasive email offering an exclusive deal on MacBook Pro to high converters",
+    "emailContent": "Dear Valued Customer, \n\nAs a token of our appreciation, we're offering you an exclusive deal on MacBook Pro. Grab your MacBook Pro today at a special price and take your tech experience to new heights!",
+    "imagePrompt": "Generate an image of MacBook Pro with a 'Special Offer' tag",
+    "status": "pending"
+  }
+]

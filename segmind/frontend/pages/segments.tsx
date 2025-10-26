@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRight, ArrowDownRight, Zap, Mail, Calendar, ShoppingCart, Eye, MousePointer, Smartphone, Edit3, Send, Clock, BarChart3, TrendingDown, AlertCircle, Settings, ChevronRight, Star, Activity, Percent, Package, Sparkles, ImageIcon, AlertTriangle, CheckCircle, X } from 'lucide-react'
+import { Users, TrendingUp, DollarSign, Target, Plus, Filter, Search, ArrowUpRight, ArrowDownRight, Zap, Mail, Calendar, ShoppingCart, Eye, MousePointer, Smartphone, Edit3, Send, Clock, BarChart3, TrendingDown, AlertCircle, Settings, ChevronRight, Star, Activity, Percent, Package, Sparkles, ImageIcon, AlertTriangle, CheckCircle, X, ArrowLeft, Gift, Check, Wand2 } from 'lucide-react'
 import ProductSegmentInsights from '../components/ProductSegmentInsights'
 import CampaignModal from '../components/CampaignModal'
 import PopupAdCreator from '../components/PopupAdCreator'
@@ -83,6 +83,197 @@ export default function SegmentsPage() {
   const [isGeneratingCards, setIsGeneratingCards] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [selectedEmailType, setSelectedEmailType] = useState('informative')
+
+  // Campaign Type Selection State
+  const [showCampaignSelection, setShowCampaignSelection] = useState(true)
+  const [selectedCampaignType, setSelectedCampaignType] = useState<'calendar' | 'popup' | null>(null)
+
+  // Product search state for popup campaigns
+  const [productSearchTerm, setProductSearchTerm] = useState('')
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [showProductDropdown, setShowProductDropdown] = useState(false)
+  const [generatedPrompt, setGeneratedPrompt] = useState('')
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
+  const [selectedOCRPatterns, setSelectedOCRPatterns] = useState<string[]>([])
+  const [popupHeadline, setPopupHeadline] = useState('')
+  const [popupDescription, setPopupDescription] = useState('')
+  const [popupCTA, setPopupCTA] = useState('')
+  const [popupShape, setPopupShape] = useState('square')
+
+  // Products data for search
+  const availableProducts = [
+    { id: 'prod_1001', name: 'iPhone 15 Pro', brand: 'Apple', category: 'Smartphones', price: 1199 },
+    { id: 'prod_1002', name: 'Samsung Galaxy S24', brand: 'Samsung', category: 'Smartphones', price: 999 },
+    { id: 'prod_1003', name: 'iPhone 15 Pro Max', brand: 'Apple', category: 'Smartphones', price: 1199 },
+    { id: 'prod_1004', name: 'iPhone 14 Pro', brand: 'Apple', category: 'Smartphones', price: 999 },
+    { id: 'prod_1005', name: 'Google Pixel 8 Pro', brand: 'Google', category: 'Smartphones', price: 999 },
+    { id: 'prod_1006', name: 'OnePlus 12', brand: 'OnePlus', category: 'Smartphones', price: 799 },
+    { id: 'prod_1007', name: 'MacBook Pro M3', brand: 'Apple', category: 'Laptops', price: 1999 },
+    { id: 'prod_1008', name: 'iPad Pro', brand: 'Apple', category: 'Tablets', price: 1099 },
+    { id: 'prod_1009', name: 'AirPods Pro', brand: 'Apple', category: 'Audio', price: 249 },
+    { id: 'prod_1010', name: 'Apple Watch Series 9', brand: 'Apple', category: 'Wearables', price: 399 }
+  ]
+
+  // OCR patterns from successful campaigns
+  const ocrPatterns = [
+    {
+      id: 'ocr_1',
+      description: 'Person running with smartphone',
+      context: 'Athletic lifestyle, fitness tracking, outdoor activities',
+      effectiveness: 87,
+      example: 'Guy running with iPhone, showing fitness app and health tracking features',
+      demographics: ['Health-conscious', 'Age 25-40', 'Active lifestyle']
+    },
+    {
+      id: 'ocr_2',
+      description: 'Professional using phone in office',
+      context: 'Business environment, productivity, work efficiency',
+      effectiveness: 82,
+      example: 'Business professional taking video call on iPhone in modern office setting',
+      demographics: ['Business professionals', 'Age 30-50', 'Corporate environment']
+    },
+    {
+      id: 'ocr_3',
+      description: 'Creative content creation',
+      context: 'Photography, video editing, artistic work',
+      effectiveness: 91,
+      example: 'Photographer capturing and editing photos on iPhone with ProRAW features',
+      demographics: ['Creative professionals', 'Age 22-45', 'Content creators']
+    },
+    {
+      id: 'ocr_4',
+      description: 'Family moments and memories',
+      context: 'Family gatherings, special occasions, memory capture',
+      effectiveness: 85,
+      example: 'Parent filming child\'s birthday with iPhone, emphasizing video quality and ease of use',
+      demographics: ['Parents', 'Age 28-45', 'Family-oriented']
+    },
+    {
+      id: 'ocr_5',
+      description: 'Gaming and entertainment',
+      context: 'Gaming performance, entertainment consumption, immersive experiences',
+      effectiveness: 78,
+      example: 'Gamer playing mobile games on iPhone with high-performance graphics',
+      demographics: ['Gamers', 'Age 18-35', 'Entertainment focused']
+    }
+  ]
+
+  // Low-performing campaign patterns to avoid
+  const lowPerformingPatterns = [
+    {
+      id: 'low_1',
+      description: 'Product in studio setting',
+      context: 'Generic studio photography, white background, no context',
+      effectiveness: 23,
+      example: 'iPhone placed on white background in studio lighting without any lifestyle context',
+      issue: 'Lacks emotional connection and real-world application'
+    },
+    {
+      id: 'low_2',
+      description: 'Feature-focused technical shots',
+      context: 'Close-up of specs, technical details, isolated features',
+      effectiveness: 31,
+      example: 'Close-up of iPhone camera lens with technical specifications overlay',
+      issue: 'Too technical, doesn\'t show benefits or use cases'
+    },
+    {
+      id: 'low_3',
+      description: 'Generic hand holding device',
+      context: 'Hand holding phone without clear purpose or activity',
+      effectiveness: 28,
+      example: 'Hand holding iPhone with blank screen in neutral setting',
+      issue: 'No clear value proposition or engaging scenario'
+    },
+    {
+      id: 'low_4',
+      description: 'Product comparison charts',
+      context: 'Side-by-side comparisons, specification tables, feature lists',
+      effectiveness: 19,
+      example: 'iPhone vs competitor comparison table with technical specs',
+      issue: 'Too data-heavy for visual advertising, lacks emotional appeal'
+    },
+    {
+      id: 'low_5',
+      description: 'Stock photo scenarios',
+      context: 'Generic business settings, posed interactions, obvious staging',
+      effectiveness: 25,
+      example: 'Obviously posed business meeting with iPhone prominently displayed',
+      issue: 'Appears inauthentic and staged, low engagement'
+    }
+  ]
+
+  // Filter products based on search term
+  const filteredProducts = availableProducts.filter(product =>
+    product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    product.brand.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(productSearchTerm.toLowerCase())
+  )
+
+  // Helper functions for popup campaigns
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
+  const toggleOCRPattern = (patternId: string) => {
+    setSelectedOCRPatterns(prev =>
+      prev.includes(patternId)
+        ? prev.filter(id => id !== patternId)
+        : [...prev, patternId]
+    )
+  }
+
+  const generateImagePrompt = async () => {
+    if (selectedProducts.length === 0) {
+      alert('Please select at least one product first')
+      return
+    }
+
+    setIsGeneratingPrompt(true)
+
+    // Simulate AI prompt generation
+    const selectedProductNames = selectedProducts.map(id =>
+      availableProducts.find(p => p.id === id)?.name || ''
+    ).filter(Boolean)
+
+    const selectedOCRData = selectedOCRPatterns.map(id =>
+      ocrPatterns.find(p => p.id === id)
+    ).filter(Boolean)
+
+    // Generate prompt based on products and OCR patterns
+    let prompt = `Create a professional marketing image featuring ${selectedProductNames.join(', ')}`
+
+    if (selectedOCRData.length > 0) {
+      const contexts = selectedOCRData.map(p => p.context).join(', ')
+      const examples = selectedOCRData.map(p => p.example).join('; ')
+      prompt += `. Incorporate elements from successful campaigns: ${contexts}. Style similar to: ${examples}`
+    }
+
+    prompt += '. High-quality, professional product photography with modern lighting and composition.'
+
+    // Simulate API delay
+    setTimeout(() => {
+      setGeneratedPrompt(prompt)
+      setIsGeneratingPrompt(false)
+    }, 2000)
+  }
+
+  // Helper function to get theme for campaign type
+  const getThemeForCampaign = (type: string): string => {
+    const themes: { [key: string]: string } = {
+      'Primary Campaign': 'Modern & Clean',
+      'Follow-up': 'Urgent & Direct',
+      'Premium Drop': 'Luxury & Exclusive',
+      'Weekly Recap': 'Friendly & Informative',
+      'Sale Campaign': 'Bold & Exciting',
+      'Promotional Campaign': 'Vibrant & Engaging',
+      'Educational Recap': 'Professional & Informative'
+    }
+    return themes[type] || 'Engaging & Professional'
+  }
 
   useEffect(() => {
     fetchSegmentsData()
@@ -310,26 +501,53 @@ export default function SegmentsPage() {
     setPopupAdModal({ isOpen: true, productName: product, segmentName: segment })
   }
 
-  // Generate campaign cards with OpenAI
+  // Generate campaign cards with Python backend
   const generateCampaignCards = async (strategy: any) => {
     setIsGeneratingCards(true)
     try {
-      const response = await fetch('/api/generate-campaign-cards', {
+      // First create basic card structure from the strategy
+      const basicCards = strategy.weeklySchedule.map((schedule: any, index: number) => ({
+        id: `card_${Date.now()}_${index}`,
+        day: schedule.day,
+        time: schedule.time,
+        type: schedule.type,
+        audience: schedule.audience,
+        theme: getThemeForCampaign(schedule.type),
+        subject: '',
+        preview: '',
+        prompt: '',
+        emailContent: '',
+        imagePrompt: '',
+        status: 'pending'
+      }))
+
+      // Send cards to Python backend for AI enhancement
+      const response = await fetch('http://localhost:8000/api/campaign-generator/process-cards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          cards: basicCards,
           product: selectedProductForPromotion,
-          strategy: strategy,
-          weeklySchedule: strategy.weeklySchedule
+          strategy: {
+            product: selectedProductForPromotion?.name,
+            primaryAudience: strategy.primaryAudience,
+            strategy: strategy.strategy,
+            emailType: strategy.emailType || 'informative',
+            customPrompt: strategy.customPrompt || ''
+          }
         })
       })
 
       if (response.ok) {
-        const cards = await response.json()
-        setGeneratedCampaignCards(cards)
-        setShowStrategyModal(false)
+        const result = await response.json()
+        if (result.success) {
+          setGeneratedCampaignCards(result.cards)
+          setShowStrategyModal(false)
+        } else {
+          throw new Error('Python API request failed')
+        }
       } else {
-        throw new Error('API request failed')
+        throw new Error('Python API request failed')
       }
     } catch (error) {
       console.error('Error generating campaign cards:', error)
@@ -545,6 +763,17 @@ The Segmind Team`
     return baseEmail
   }
 
+  // Campaign Type Selection Handlers
+  const handleCampaignTypeSelection = (type: 'calendar' | 'popup') => {
+    setSelectedCampaignType(type)
+    setShowCampaignSelection(false)
+  }
+
+  const handleBackToSelection = () => {
+    setShowCampaignSelection(true)
+    setSelectedCampaignType(null)
+  }
+
   return (
     <>
       <Head>
@@ -587,22 +816,79 @@ The Segmind Team`
           </div>
         </header>
 
-        {/* Main Content - Product Selection Flow */}
+        {/* Main Content */}
         <main className="max-w-full px-4 sm:px-6 lg:px-8 py-6">
-          {/* Flow Header */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Campaign Builder</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">Products → Calendar → Analytics</p>
+          {showCampaignSelection ? (
+            // Campaign Type Selection Screen
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Choose Campaign Type</h1>
+                <p className="text-gray-600 dark:text-gray-400">Select the type of campaign you want to create</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
-                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">📱 Tech Products</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Calendar Campaign Option */}
+                <div
+                  onClick={() => handleCampaignTypeSelection('calendar')}
+                  className="bg-white dark:bg-gray-800 rounded-xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 cursor-pointer transition-all group"
+                >
+                  <div className="text-center">
+                    <Calendar className="h-16 w-16 text-gray-400 group-hover:text-purple-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Calendar Campaign</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Create and schedule multiple email campaigns with AI-powered content generation,
+                      product targeting, and strategic timing across a full calendar view.
+                    </p>
+                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                      ✨ AI Strategy Generation • 📧 Email Campaigns • 📅 Calendar Scheduling
+                    </div>
+                  </div>
+                </div>
+
+                {/* Popup Campaign Option */}
+                <div
+                  onClick={() => handleCampaignTypeSelection('popup')}
+                  className="bg-white dark:bg-gray-800 rounded-xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/10 cursor-pointer transition-all group"
+                >
+                  <div className="text-center">
+                    <Zap className="h-16 w-16 text-gray-400 group-hover:text-orange-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Popup Campaign</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Design targeted popup advertisements with personalized messaging,
+                      custom visuals, and conversion-optimized layouts for specific customer segments.
+                    </p>
+                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                      🎨 Visual Design • 🎯 Targeted Messaging • 📊 Conversion Optimization
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : selectedCampaignType === 'calendar' ? (
+            // Calendar Campaign Interface
+            <>
+              {/* Flow Header */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={handleBackToSelection}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar Campaign Builder</h1>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">Products → Calendar → Analytics</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 px-3 py-1 rounded-full">
+                      <span className="text-sm font-medium text-purple-800 dark:text-purple-200">📅 Calendar Mode</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
           {/* Three Column Layout */}
           <div className="grid grid-cols-12 gap-6 h-[calc(100vh-200px)]">
@@ -1081,6 +1367,471 @@ The Segmind Team`
               </div>
             </div>
           </div>
+            </>
+          ) : selectedCampaignType === 'popup' ? (
+            // Popup Campaign Interface
+            <>
+              {/* Popup Header */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={handleBackToSelection}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Popup Campaign Builder</h1>
+                      <p className="text-gray-600 dark:text-gray-400 mt-1">Design → Target → Deploy</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 px-3 py-1 rounded-full">
+                      <span className="text-sm font-medium text-orange-800 dark:text-orange-200">🎨 Popup Mode</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Popup Campaign Flow */}
+              <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column - Design & Settings */}
+                  <div className="col-span-12 lg:col-span-3 space-y-6">
+                    {/* Popup Design Settings */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <Zap className="h-5 w-5 mr-2 text-orange-600" />
+                        Popup Design & Targeting
+                      </h3>
+                      <div className="space-y-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Popup Shape & Size
+                          </label>
+                          <div className="space-y-3">
+                            <label className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="popupShape"
+                                value="square"
+                                checked={popupShape === 'square'}
+                                onChange={(e) => setPopupShape(e.target.value)}
+                                className="text-orange-600"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <div className="w-8 h-6 bg-orange-200 dark:bg-orange-800 rounded border"></div>
+                                <span className="text-sm text-gray-900 dark:text-white">Square (400x400)</span>
+                              </div>
+                            </label>
+                            <label className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="popupShape"
+                                value="horizontal"
+                                checked={popupShape === 'horizontal'}
+                                onChange={(e) => setPopupShape(e.target.value)}
+                                className="text-orange-600"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <div className="w-10 h-4 bg-blue-200 dark:bg-blue-800 rounded border"></div>
+                                <span className="text-sm text-gray-900 dark:text-white">Horizontal (600x300)</span>
+                              </div>
+                            </label>
+                            <label className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="popupShape"
+                                value="tall"
+                                checked={popupShape === 'tall'}
+                                onChange={(e) => setPopupShape(e.target.value)}
+                                className="text-orange-600"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <div className="w-4 h-10 bg-green-200 dark:bg-green-800 rounded border"></div>
+                                <span className="text-sm text-gray-900 dark:text-white">Tall Banner (250x500)</span>
+                              </div>
+                            </label>
+                            <label className="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="popupShape"
+                                value="wide"
+                                checked={popupShape === 'wide'}
+                                onChange={(e) => setPopupShape(e.target.value)}
+                                className="text-orange-600"
+                              />
+                              <div className="flex items-center space-x-2">
+                                <div className="w-12 h-2 bg-purple-200 dark:bg-purple-800 rounded border"></div>
+                                <span className="text-sm text-gray-900 dark:text-white">Wide Banner (800x150)</span>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Popup Trigger
+                          </label>
+                          <select className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                            <option>Exit Intent</option>
+                            <option>Timed Popup (5 seconds)</option>
+                            <option>Scroll Trigger (50%)</option>
+                            <option>Click Trigger</option>
+                            <option>Page Load</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Campaign Goal
+                          </label>
+                          <select className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                            <option>Lead Generation</option>
+                            <option>Product Promotion</option>
+                            <option>Discount Offer</option>
+                            <option>Newsletter Signup</option>
+                            <option>Cart Recovery</option>
+                            <option>Event Promotion</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Target Segment
+                          </label>
+                          <select className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                            <option>High Converters</option>
+                            <option>Window Shoppers</option>
+                            <option>Cart Abandoners</option>
+                            <option>Loyal Customers</option>
+                            <option>New Visitors</option>
+                            <option>Mobile Users</option>
+                            <option>Returning Customers</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Product Selection */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <Search className="h-5 w-5 mr-2 text-blue-600" />
+                        Product Selection
+                      </h3>
+                      <div className="space-y-6">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={productSearchTerm}
+                            onChange={(e) => {
+                              setProductSearchTerm(e.target.value)
+                              setShowProductDropdown(e.target.value.length > 0)
+                            }}
+                            onFocus={() => setShowProductDropdown(productSearchTerm.length > 0)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white pl-10"
+                          />
+                          <Search className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
+
+                          {showProductDropdown && filteredProducts.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {filteredProducts.map((product) => (
+                                <div
+                                  key={product.id}
+                                  onClick={() => {
+                                    toggleProductSelection(product.id)
+                                    setProductSearchTerm('')
+                                    setShowProductDropdown(false)
+                                  }}
+                                  className="p-3 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer flex items-center justify-between"
+                                >
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{product.name}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand} • {product.category} • ${product.price}</p>
+                                  </div>
+                                  {selectedProducts.includes(product.id) && (
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Selected Products */}
+                        {selectedProducts.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Selected Products ({selectedProducts.length})</p>
+                            <div className="flex flex-wrap gap-3">
+                              {selectedProducts.map((productId) => {
+                                const product = availableProducts.find(p => p.id === productId)
+                                return product ? (
+                                  <div key={productId} className="flex items-center bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
+                                    <span>{product.name}</span>
+                                    <button
+                                      onClick={() => toggleProductSelection(productId)}
+                                      className="ml-2 hover:text-blue-600"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ) : null
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+
+                  </div>
+
+                  {/* Center Column - Live Preview */}
+                  <div className="col-span-12 lg:col-span-6 space-y-6">
+                    {/* Live Preview */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Live Preview</h3>
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-8 flex items-center justify-center min-h-[300px]">
+                        <div
+                          className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl transition-all duration-300 ${
+                            popupShape === 'square' ? 'w-80 h-80 p-8' :
+                            popupShape === 'horizontal' ? 'w-96 h-48 p-6' :
+                            popupShape === 'tall' ? 'w-48 h-96 p-6' :
+                            popupShape === 'wide' ? 'w-full max-w-2xl h-32 p-4' : 'w-80 h-80 p-8'
+                          }`}
+                        >
+                          <div className={`text-center h-full ${
+                            popupShape === 'wide' ? 'flex items-center justify-between' : 'flex flex-col justify-center'
+                          }`}>
+                            {popupShape === 'wide' ? (
+                              <>
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                    <Gift className="h-6 w-6 text-white" />
+                                  </div>
+                                  <div className="text-left">
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                      {popupHeadline || "Special Offer!"}
+                                    </h4>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                      {popupDescription || "Get 20% off your next purchase"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button className="bg-orange-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-orange-700 transition-colors">
+                                  {popupCTA || "Claim Offer"}
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <div className={`${
+                                  popupShape === 'tall' ? 'w-8 h-8 mb-2' : 'w-16 h-16 mb-4'
+                                } bg-orange-500 rounded-full flex items-center justify-center mx-auto`}>
+                                  <Gift className={`${
+                                    popupShape === 'tall' ? 'h-4 w-4' : 'h-8 w-8'
+                                  } text-white`} />
+                                </div>
+                                <h4 className={`font-semibold text-gray-900 dark:text-white mb-2 ${
+                                  popupShape === 'tall' ? 'text-sm' :
+                                  popupShape === 'horizontal' ? 'text-lg' : 'text-xl'
+                                }`}>
+                                  {popupHeadline || "Special Offer!"}
+                                </h4>
+                                <p className={`text-gray-600 dark:text-gray-400 mb-4 ${
+                                  popupShape === 'tall' ? 'text-xs' : 'text-sm'
+                                }`}>
+                                  {popupDescription || "Get 20% off your next purchase"}
+                                </p>
+                                <button className={`bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors ${
+                                  popupShape === 'tall' ? 'px-3 py-1 text-xs' : 'px-4 py-2 text-sm'
+                                }`}>
+                                  {popupCTA || "Claim Offer"}
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Shape Info */}
+                      <div className="mt-4 text-center">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                          {popupShape === 'square' ? '400×400px Square' :
+                           popupShape === 'horizontal' ? '600×300px Horizontal' :
+                           popupShape === 'tall' ? '250×500px Tall Banner' :
+                           popupShape === 'wide' ? '800×150px Wide Banner' : 'Custom Size'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - AI Tools & Actions */}
+                  <div className="col-span-12 lg:col-span-3 space-y-6">
+                    {/* AI Image Prompt Generation */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <Wand2 className="h-5 w-5 mr-2 text-indigo-600" />
+                        AI Image Prompt
+                      </h3>
+                      <button
+                        onClick={generateImagePrompt}
+                        disabled={selectedProducts.length === 0 || isGeneratingPrompt}
+                        className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 mb-6"
+                      >
+                        {isGeneratingPrompt ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4" />
+                            <span>Generate Image Prompt</span>
+                          </>
+                        )}
+                      </button>
+
+                      {generatedPrompt && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            Generated Prompt (Edit as needed)
+                          </label>
+                          <textarea
+                            value={generatedPrompt}
+                            onChange={(e) => setGeneratedPrompt(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            rows={4}
+                            placeholder="AI-generated image prompt will appear here..."
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* OCR Campaign Insights */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <Sparkles className="h-5 w-5 mr-2 text-purple-600" />
+                        High-Performing Campaign Styles
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        Select successful campaign patterns to incorporate
+                      </p>
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {ocrPatterns.map((pattern) => (
+                          <div
+                            key={pattern.id}
+                            onClick={() => toggleOCRPattern(pattern.id)}
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                              selectedOCRPatterns.includes(pattern.id)
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-400'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">{pattern.description}</h4>
+                                  <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-xs px-2 py-0.5 rounded-full">
+                                    {pattern.effectiveness}%
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{pattern.example}</p>
+                              </div>
+                              {selectedOCRPatterns.includes(pattern.id) && (
+                                <Check className="h-4 w-4 text-purple-600 ml-2" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Low-Performing Campaign Styles Info */}
+                    <div className="mb-8">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span>Campaign Style Notes</span>
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        Common low-performing patterns for this product type
+                      </p>
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {lowPerformingPatterns.map((pattern) => (
+                          <div
+                            key={pattern.id}
+                            className="p-3 rounded-lg border-2 border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">{pattern.description}</h4>
+                                  <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-0.5 rounded-full">
+                                    {pattern.effectiveness}% CTR
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">{pattern.example}</p>
+                                <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">{pattern.issue}</p>
+                              </div>
+                              <div className="ml-2 text-yellow-500">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Generate Campaign */}
+                    <button className="w-full bg-orange-600 text-white px-6 py-4 rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2 text-lg font-semibold">
+                      <Sparkles className="h-6 w-6" />
+                      <span>Generate Popup Campaign</span>
+                    </button>
+
+                    {/* Performance Metrics */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Expected Performance</h3>
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Expected Views</span>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {selectedProducts.length > 0 ? (2450 * selectedProducts.length / 2).toLocaleString() : '2,450'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Predicted CTR</span>
+                          <span className="text-sm font-medium text-green-600">
+                            {selectedOCRPatterns.length > 0
+                              ? `${Math.round(8.5 + (selectedOCRPatterns.reduce((acc, id) => {
+                                  const pattern = ocrPatterns.find(p => p.id === id);
+                                  return acc + (pattern ? pattern.effectiveness / 10 : 0);
+                                }, 0) / selectedOCRPatterns.length))}%`
+                              : '8.5%'
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Expected Conversions</span>
+                          <span className="text-sm font-medium text-blue-600">
+                            {selectedProducts.length > 0 ? Math.round(208 * selectedProducts.length / 2) : 208}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Revenue Potential</span>
+                          <span className="text-sm font-medium text-purple-600">
+                            ${selectedProducts.length > 0 ? (5200 * selectedProducts.length / 2).toLocaleString() : '5,200'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : null}
         </main>
 
         {/* Campaign Modal */}

@@ -1,0 +1,45 @@
+{
+  "cards": [
+    {
+      "id": "card_1729909876_0",
+      "day": "Monday",
+      "time": "10:00 AM",
+      "type": "Primary Campaign",
+      "audience": "Window Shoppers",
+      "theme": "Modern & Clean",
+      "subject": "",
+      "preview": "",
+      "prompt": "",
+      "emailContent": "",
+      "imagePrompt": "",
+      "status": "pending"
+    },
+    {
+      "id": "card_1729909876_1",
+      "day": "Wednesday",
+      "time": "2:00 PM",
+      "type": "Follow-up",
+      "audience": "Cart Abandoners",
+      "theme": "Urgent & Direct",
+      "subject": "",
+      "preview": "",
+      "prompt": "",
+      "emailContent": "",
+      "imagePrompt": "",
+      "status": "pending"
+    }
+  ],
+  "product": {
+    "name": "iPhone 15 Pro",
+    "category": "Smartphones",
+    "price": 1199,
+    "brand": "Apple"
+  },
+  "strategy": {
+    "product": "iPhone 15 Pro",
+    "primaryAudience": "Window Shoppers",
+    "strategy": "Generate targeted informative email campaigns for window shoppers with compelling hero images and personalized content.",
+    "emailType": "informative",
+    "customPrompt": ""
+  }
+}

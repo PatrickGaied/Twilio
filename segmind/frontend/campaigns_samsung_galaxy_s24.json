@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "day": "Monday",
+    "time": "10:00 AM",
+    "type": "Primary Campaign",
+    "audience": "Window Shoppers",
+    "theme": "Samsung Galaxy S24 Introduction",
+    "subject": "Meet the Future with Samsung Galaxy S24",
+    "preview": "Unearth the potentials of Samsung's latest tech marvel.",
+    "prompt": "Introduce Samsung Galaxy S24 to the audience",
+    "emailContent": "Hello Tech Enthusiast, \n\nStep into the future with Samsung Galaxy S24. Experience the cutting-edge technology and state-of-the-art features, all designed to elevate your mobile experience to the next level. Don't just get ahead, stay ahead with Samsung Galaxy S24. \n\nBest, \nYour Samsung Team",
+    "imagePrompt": "A futuristic image of Samsung Galaxy S24 with a sleek design.",
+    "status": "pending"
+  },
+  {
+    "id": "2",
+    "day": "Wednesday",
+    "time": "2:00 PM",
+    "type": "Follow-up Campaign",
+    "audience": "Cart Abandoners",
+    "theme": "Samsung Galaxy S24 Reminder",
+    "subject": "Don't Miss Out on Samsung Galaxy S24",
+    "preview": "Your future device is still waiting in your cart.",
+    "prompt": "Remind audience about Samsung Galaxy S24 in their cart",
+    "emailContent": "Hi there, \n\nIt seems you've left something incredible in your cart. The Samsung Galaxy S24, our most powerful and advanced smartphone yet, is waiting for you. Don't let the future wait. Grab your Galaxy S24 now! \n\nCheers, \nYour Samsung Team",
+    "imagePrompt": "A cart with a Samsung Galaxy S24 sticking out.",
+    "status": "pending"
+  },
+  {
+    "id": "3",
+    "day": "Friday",
+    "time": "9:00 AM",
+    "type": "Premium Drop",
+    "audience": "High Converters",
+    "theme": "Samsung Galaxy S24 Exclusive Offer",
+    "subject": "Exclusive Offer Just For You - Samsung Galaxy S24",
+    "preview": "An opportunity to seize the future exclusively designed for you.",
+    "prompt": "Present an exclusive offer for Samsung Galaxy S24",
+    "emailContent": "Hello High Converter, \n\nAs a thank you for being a loyal customer, we're giving you an exclusive opportunity to be one of the first ones to get your hands on the Samsung Galaxy S24. Seize the future and enjoy this exclusive offer. \n\nYours, \nYour Samsung Team",
+    "imagePrompt": "Samsung Galaxy S24 with a 'Premium Offer' tag.",
+    "status": "pending"
+  }
+]
