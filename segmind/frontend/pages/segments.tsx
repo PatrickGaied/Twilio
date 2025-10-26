@@ -75,6 +75,14 @@ export default function SegmentsPage() {
   const [scheduledCampaigns, setScheduledCampaigns] = useState<any[]>([])
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
   const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
+  const [strategyRecommendation, setStrategyRecommendation] = useState<any>(null)
+  const [showStrategyModal, setShowStrategyModal] = useState(false)
+  const [generatedCampaignCards, setGeneratedCampaignCards] = useState<any[]>([])
+  const [hoveredCard, setHoveredCard] = useState<any>(null)
+  const [editingSchedule, setEditingSchedule] = useState<any>(null)
+  const [isGeneratingCards, setIsGeneratingCards] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [selectedEmailType, setSelectedEmailType] = useState('informative')
 
   useEffect(() => {
     fetchSegmentsData()
@@ -206,16 +214,53 @@ export default function SegmentsPage() {
       setStrategyRecommendation({
         product: product.name,
         primaryAudience: 'Window Shoppers',
-        strategy: 'Create emails on Monday and Wednesday for window shoppers. If they view and click cart, trigger follow-up within 2 hours.',
+        strategy: 'Generate targeted email campaigns for window shoppers with compelling hero images and personalized content. Focus on studio lighting backgrounds (avoid desert/outdoor settings) for optimal conversion rates.',
+        emailStrategy: 'Each email will feature custom hero images and tailored messaging based on audience behavior patterns.',
+        heroImageGuidelines: 'Use clean, studio-lit product shots with tech-focused backgrounds. Avoid outdoor/desert settings which reduce iPhone email performance by 40%.',
         timing: ['Monday 10AM', 'Wednesday 2PM'],
         followUp: 'Auto cart abandonment sequence',
         expectedCampaigns: 5,
         weeklySchedule: [
-          { day: 'Monday', time: '10:00 AM', type: 'Primary Campaign', audience: 'Window Shoppers' },
-          { day: 'Wednesday', time: '2:00 PM', type: 'Primary Campaign', audience: 'Window Shoppers' },
-          { day: 'Thursday', time: '11:00 AM', type: 'Follow-up', audience: 'Cart Abandoners' },
-          { day: 'Friday', time: '9:00 AM', type: 'Premium Drop', audience: 'High Converters' },
-          { day: 'Sunday', time: '6:00 PM', type: 'Weekly Recap', audience: 'All Segments' }
+          {
+            day: 'Monday',
+            time: '10:00 AM',
+            type: 'Primary Campaign',
+            audience: 'Window Shoppers',
+            heroImageDesc: 'Clean studio shot of iPhone 15 Pro on minimal white background with soft lighting',
+            emailTheme: 'Discovery & Exploration'
+          },
+          {
+            day: 'Wednesday',
+            time: '2:00 PM',
+            type: 'Primary Campaign',
+            audience: 'Window Shoppers',
+            heroImageDesc: 'iPhone 15 Pro with camera features highlighted, tech workspace background',
+            emailTheme: 'Feature Showcase'
+          },
+          {
+            day: 'Thursday',
+            time: '11:00 AM',
+            type: 'Follow-up',
+            audience: 'Cart Abandoners',
+            heroImageDesc: 'iPhone 15 Pro with shopping cart overlay, urgent but premium feel',
+            emailTheme: 'Urgency & Completion'
+          },
+          {
+            day: 'Friday',
+            time: '9:00 AM',
+            type: 'Premium Drop',
+            audience: 'High Converters',
+            heroImageDesc: 'Luxury product shot with dramatic lighting, black background, exclusive feel',
+            emailTheme: 'Exclusive Access'
+          },
+          {
+            day: 'Sunday',
+            time: '6:00 PM',
+            type: 'Weekly Recap',
+            audience: 'All Segments',
+            heroImageDesc: 'Collection layout featuring iPhone alongside other products, modern grid',
+            emailTheme: 'Weekly Highlights'
+          }
         ]
       })
     }
@@ -263,6 +308,212 @@ export default function SegmentsPage() {
 
   const handleCreatePopupAdFromInsight = (product: string, segment: string) => {
     setPopupAdModal({ isOpen: true, productName: product, segmentName: segment })
+  }
+
+  // Generate campaign cards with OpenAI
+  const generateCampaignCards = async (strategy: any) => {
+    setIsGeneratingCards(true)
+    try {
+      const response = await fetch('/api/generate-campaign-cards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product: selectedProductForPromotion,
+          strategy: strategy,
+          weeklySchedule: strategy.weeklySchedule
+        })
+      })
+
+      if (response.ok) {
+        const cards = await response.json()
+        setGeneratedCampaignCards(cards)
+        setShowStrategyModal(false)
+      } else {
+        throw new Error('API request failed')
+      }
+    } catch (error) {
+      console.error('Error generating campaign cards:', error)
+      // Fallback to mock data with detailed email content
+      const mockCards = strategy.weeklySchedule.map((schedule: any, index: number) => ({
+        id: `card_${Date.now()}_${index}`,
+        day: schedule.day,
+        time: schedule.time,
+        type: schedule.type,
+        audience: schedule.audience,
+        theme: schedule.emailTheme || 'Engaging',
+        heroImage: schedule.heroImageDesc,
+        prompt: `Generate ${schedule.type} email for ${schedule.audience} promoting ${selectedProductForPromotion?.name}. Theme: ${schedule.emailTheme}. Hero image: ${schedule.heroImageDesc}`,
+        preview: `${schedule.day} ${schedule.time}: ${schedule.type}`,
+        status: 'pending',
+        subject: getEmailSubjectForSchedule(schedule, selectedProductForPromotion?.name),
+        emailContent: getEmailContentForSchedule(schedule, selectedProductForPromotion?.name),
+        dateScheduled: getDateForSchedule(schedule)
+      }))
+      setGeneratedCampaignCards(mockCards)
+      setShowStrategyModal(false)
+    } finally {
+      setIsGeneratingCards(false)
+    }
+  }
+
+  // Modify individual schedule item
+  const modifyScheduleItem = (index: number) => {
+    setEditingSchedule(index)
+  }
+
+  // Save schedule modifications
+  const saveScheduleModification = (index: number, newSchedule: any) => {
+    if (strategyRecommendation) {
+      const updatedSchedule = [...strategyRecommendation.weeklySchedule]
+      updatedSchedule[index] = newSchedule
+      setStrategyRecommendation({
+        ...strategyRecommendation,
+        weeklySchedule: updatedSchedule
+      })
+    }
+    setEditingSchedule(null)
+  }
+
+  // Helper functions for email generation
+  const getEmailSubjectForSchedule = (schedule: any, productName: string) => {
+    const subjects: { [key: string]: string[] } = {
+      'Primary Campaign': [
+        `Discover the ${productName} - Perfect for You!`,
+        `New ${productName} Features You'll Love`,
+        `${productName} - See What's Possible`
+      ],
+      'Follow-up': [
+        `Still thinking about ${productName}?`,
+        `Don't miss out - ${productName} waiting for you`,
+        `Complete your ${productName} journey`
+      ],
+      'Premium Drop': [
+        `Exclusive: ${productName} VIP Access`,
+        `Premium Members Only: ${productName}`,
+        `Limited Edition ${productName} - For You`
+      ],
+      'Weekly Recap': [
+        `This Week's Tech Highlights featuring ${productName}`,
+        `Weekly Update: ${productName} & More`,
+        `Your personalized tech roundup`
+      ]
+    }
+    const typeSubjects = subjects[schedule.type] || subjects['Primary Campaign']
+    return typeSubjects[0]
+  }
+
+  const getEmailContentForSchedule = (schedule: any, productName: string) => {
+    const templates: { [key: string]: string } = {
+      'Primary Campaign': `Hi {{first_name}},
+
+We're excited to show you the ${productName}!
+
+🌟 ${schedule.emailTheme}: Discover what makes this product special
+📸 Hero Image: ${schedule.heroImageDesc}
+
+✨ Perfect for ${schedule.audience.toLowerCase()} like you
+• Premium design and latest features
+• Tailored to your interests
+• Available now with exclusive member benefits
+
+Ready to explore?
+
+Best regards,
+The Segmind Team`,
+
+      'Follow-up': `Hi {{first_name}},
+
+We noticed you were interested in the ${productName}.
+
+⏰ Theme: ${schedule.emailTheme}
+🎯 Hero Image: ${schedule.heroImageDesc}
+
+Don't let this opportunity slip away:
+• Still available with member pricing
+• Free shipping & 30-day guarantee
+• Limited time offer
+
+[Complete Your Purchase]
+
+Best regards,
+The Segmind Team`,
+
+      'Premium Drop': `Hi {{first_name}},
+
+Exclusive access to ${productName} - just for you.
+
+👑 ${schedule.emailTheme}
+💎 Hero Image: ${schedule.heroImageDesc}
+
+VIP Benefits:
+• 20% exclusive discount
+• Priority shipping
+• Extended warranty
+
+[Claim Your Exclusive Access]
+
+Best regards,
+The Segmind Team`,
+
+      'Weekly Recap': `Hi {{first_name}},
+
+This week's highlights featuring ${productName}:
+
+📊 ${schedule.emailTheme}
+🖼️ Hero Image: ${schedule.heroImageDesc}
+
+• Featured: ${productName}
+• Trending tech deals
+• Personalized recommendations
+
+[Explore This Week's Picks]
+
+Best regards,
+The Segmind Team`
+    }
+    return templates[schedule.type] || templates['Primary Campaign']
+  }
+
+  const getDateForSchedule = (schedule: any) => {
+    const today = new Date()
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const targetDay = days.indexOf(schedule.day)
+    const currentDay = today.getDay()
+
+    let daysUntilTarget = targetDay - currentDay
+    if (daysUntilTarget <= 0) daysUntilTarget += 7
+
+    const targetDate = new Date(today)
+    targetDate.setDate(today.getDate() + daysUntilTarget)
+
+    return targetDate.toISOString().split('T')[0]
+  }
+
+  // Regenerate individual card
+  const regenerateCard = async (cardId: string) => {
+    const cardIndex = generatedCampaignCards.findIndex(card => card.id === cardId)
+    if (cardIndex === -1) return
+
+    const card = generatedCampaignCards[cardIndex]
+    const schedule = strategyRecommendation?.weeklySchedule.find((s: any) =>
+      s.day === card.day && s.time === card.time
+    )
+
+    if (!schedule) return
+
+    // Create new card with different content
+    const newCard = {
+      ...card,
+      id: `card_${Date.now()}_regenerated`,
+      subject: getEmailSubjectForSchedule(schedule, selectedProductForPromotion?.name),
+      emailContent: getEmailContentForSchedule(schedule, selectedProductForPromotion?.name),
+      prompt: `Regenerated: Generate ${schedule.type} email for ${schedule.audience} promoting ${selectedProductForPromotion?.name}. Theme: ${schedule.emailTheme}. Hero image: ${schedule.heroImageDesc}`,
+      status: 'pending'
+    }
+
+    const updatedCards = [...generatedCampaignCards]
+    updatedCards[cardIndex] = newCard
+    setGeneratedCampaignCards(updatedCards)
   }
 
   const generateEmailWithChatGPT = () => {
@@ -500,7 +751,7 @@ The Segmind Team`
                       </div>
                     </div>
 
-                    {/* Mini Calendar */}
+                    {/* Bigger Calendar */}
                     <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-medium text-gray-900 dark:text-white">October 2024</h4>
@@ -514,52 +765,153 @@ The Segmind Team`
                         </div>
                       </div>
 
-                      {/* Calendar Grid */}
-                      <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                          <div key={day} className="p-2 font-medium text-gray-500">{day}</div>
+                      {/* Bigger Calendar Grid */}
+                      <div className="grid grid-cols-7 gap-2 text-center text-sm">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} className="p-3 font-medium text-gray-500 border-b">{day}</div>
                         ))}
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map(date => (
-                          <div
-                            key={date}
-                            onClick={() => setSelectedDate(`2024-10-${String(date).padStart(2, '0')}`)}
-                            className={`p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 cursor-pointer rounded ${
-                              selectedDate === `2024-10-${String(date).padStart(2, '0')}`
-                                ? 'bg-purple-500 text-white'
-                                : 'text-gray-700 dark:text-gray-300'
-                            }`}
-                          >
-                            {date}
-                            {scheduledCampaigns.some(c => c.date === `2024-10-${String(date).padStart(2, '0')}`) && (
-                              <div className="w-1 h-1 bg-blue-500 rounded-full mx-auto mt-1"></div>
-                            )}
-                          </div>
-                        ))}
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(date => {
+                          const dateStr = `2024-10-${String(date).padStart(2, '0')}`
+                          const campaignsForDate = scheduledCampaigns.filter(c => c.date === dateStr)
+                          return (
+                            <div
+                              key={date}
+                              onClick={() => setSelectedDate(dateStr)}
+                              className={`p-3 min-h-[60px] hover:bg-purple-100 dark:hover:bg-purple-900/30 cursor-pointer rounded border ${
+                                selectedDate === dateStr
+                                  ? 'bg-purple-500 text-white border-purple-600'
+                                  : 'text-gray-700 dark:text-gray-300 border-gray-100 dark:border-gray-600'
+                              }`}
+                            >
+                              <div className="font-medium">{date}</div>
+                              {campaignsForDate.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                  {campaignsForDate.slice(0, 3).map((campaign, index) => (
+                                    <div key={index} className="text-xs bg-blue-500 text-white px-1 py-0.5 rounded truncate">
+                                      {campaign.type}
+                                    </div>
+                                  ))}
+                                  {campaignsForDate.length > 3 && (
+                                    <div className="text-xs text-blue-600">+{campaignsForDate.length - 3} more</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
 
-                    {/* Scheduled Campaigns */}
-                    {scheduledCampaigns.length > 0 && (
+                    {/* Generated Email Campaign Cards */}
+                    {generatedCampaignCards.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="font-medium text-gray-900 dark:text-white">Scheduled Campaigns</h4>
-                        {scheduledCampaigns.map(campaign => (
-                          <div key={campaign.id} className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-green-800 dark:text-green-200">{campaign.product}</div>
-                                <div className="text-sm text-green-600 dark:text-green-400">{campaign.date} at {campaign.time}</div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
-                                  {campaign.status}
-                                </span>
-                                <button className="text-green-600 hover:text-green-800">
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900 dark:text-white">📧 Generated Email Campaigns</h4>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                // Approve all cards and add to calendar
+                                generatedCampaignCards.forEach(card => {
+                                  const calendarEntry = {
+                                    id: card.id,
+                                    product: selectedProductForPromotion?.name,
+                                    date: card.dateScheduled,
+                                    time: card.time,
+                                    type: card.type,
+                                    audience: card.audience,
+                                    status: 'scheduled',
+                                    email: card.emailContent,
+                                    subject: card.subject,
+                                    heroImage: card.heroImage
+                                  }
+                                  setScheduledCampaigns(prev => [...prev, calendarEntry])
+                                })
+                                setGeneratedCampaignCards([])
+                              }}
+                              className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                            >
+                              ✅ Approve All
+                            </button>
+                            <button
+                              onClick={() => setGeneratedCampaignCards([])}
+                              className="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                            >
+                              ❌ Remove All
+                            </button>
                           </div>
-                        ))}
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {generatedCampaignCards.map(card => (
+                            <div
+                              key={card.id}
+                              className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700 cursor-pointer hover:shadow-md transition-all"
+                              onMouseEnter={() => setHoveredCard(card)}
+                              onMouseLeave={() => setHoveredCard(null)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-blue-800 dark:text-blue-200 text-sm">{card.type}</div>
+                                  <div className="text-xs text-blue-600 dark:text-blue-400">{card.day} {card.time}</div>
+                                  <div className="text-xs text-gray-500">{card.audience}</div>
+                                  <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">{card.theme}</div>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium truncate">{card.subject}</div>
+                                </div>
+                                <div className="flex items-center space-x-2 ml-2">
+                                  <button
+                                    onClick={() => {
+                                      // Add to calendar and remove from pending
+                                      const calendarEntry = {
+                                        id: card.id,
+                                        product: selectedProductForPromotion?.name,
+                                        date: card.dateScheduled,
+                                        time: card.time,
+                                        type: card.type,
+                                        audience: card.audience,
+                                        status: 'scheduled',
+                                        email: card.emailContent,
+                                        subject: card.subject,
+                                        heroImage: card.heroImage
+                                      }
+                                      setScheduledCampaigns(prev => [...prev, calendarEntry])
+                                      setGeneratedCampaignCards(prev => prev.filter(c => c.id !== card.id))
+                                    }}
+                                    className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 flex items-center text-xs"
+                                    title="Add to Calendar"
+                                  >
+                                    ✅
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setGeneratedCampaignCards(prev => prev.filter(c => c.id !== card.id))
+                                    }}
+                                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 flex items-center text-xs"
+                                    title="Remove"
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Hover Preview - Full Email Content */}
+                              {hoveredCard?.id === card.id && (
+                                <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
+                                  <div className="text-xs space-y-2">
+                                    <div><strong>📧 Subject:</strong> {card.subject}</div>
+                                    <div><strong>🎨 Theme:</strong> {card.theme}</div>
+                                    <div><strong>📸 Hero Image:</strong> {card.heroImage}</div>
+                                    <div><strong>🤖 AI Prompt:</strong> {card.prompt}</div>
+                                    <div className="border-t pt-2">
+                                      <strong>📝 Email Preview:</strong>
+                                      <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded mt-1 text-xs font-mono">
+                                        {card.emailContent.substring(0, 200)}...
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -584,15 +936,55 @@ The Segmind Team`
                   </div>
                 ) : (
                   <div className="space-y-4 p-4">
-                    {/* OCR Analytics */}
-                    {ocrInsights.length > 0 && (
+                    {/* Audience Analytics & Strategies */}
+                    {ocrInsights.filter(insight => insight.type === 'audience').length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                          <Users className="h-4 w-4 mr-2" />
+                          Audience Strategies
+                        </h4>
+                        <div className="space-y-2">
+                          {ocrInsights.filter(insight => insight.type === 'audience').map((insight, index) => (
+                            <div key={index} className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="font-medium text-green-800 dark:text-green-200 text-sm">
+                                  {insight.audience}
+                                </div>
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs rounded-full">
+                                  {insight.conversionRate}
+                                </span>
+                              </div>
+
+                              <div className="mb-2">
+                                <div className="text-xs font-medium text-green-800 dark:text-green-200 mb-1">Strategy:</div>
+                                <p className="text-xs text-green-700 dark:text-green-300">{insight.strategy}</p>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="font-medium text-green-800 dark:text-green-200">Timing:</span>
+                                  <div className="text-green-600 dark:text-green-400">{insight.timing}</div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-green-800 dark:text-green-200">Follow-up:</span>
+                                  <div className="text-green-600 dark:text-green-400">{insight.followUp}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* OCR Visual Insights */}
+                    {ocrInsights.filter(insight => insight.type !== 'audience').length > 0 && (
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 flex items-center">
                           <ImageIcon className="h-4 w-4 mr-2" />
-                          OCR Insights
+                          Visual Insights
                         </h4>
                         <div className="space-y-2">
-                          {ocrInsights.map((insight, index) => (
+                          {ocrInsights.filter(insight => insight.type !== 'audience').map((insight, index) => (
                             <div key={index} className={`p-3 rounded-lg border ${
                               insight.type === 'warning'
                                 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
@@ -613,14 +1005,7 @@ The Segmind Team`
                                     {insight.message}
                                   </p>
                                   <div className="flex items-center justify-between mt-1">
-                                    <span className="text-xs text-gray-500">{insight.source}</span>
-                                    <span className={`text-xs font-medium ${
-                                      insight.type === 'warning'
-                                        ? 'text-orange-600 dark:text-orange-400'
-                                        : 'text-blue-600 dark:text-blue-400'
-                                    }`}>
-                                      {insight.confidence} confidence
-                                    </span>
+                                    <span className="text-xs text-gray-500">{insight.source || insight.confidence}</span>
                                   </div>
                                 </div>
                               </div>
@@ -713,6 +1098,286 @@ The Segmind Team`
           segmentName={popupAdModal.segmentName}
           productName={popupAdModal.productName}
         />
+
+        {/* Strategy Recommendation Modal */}
+        {showStrategyModal && strategyRecommendation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">📧 Email Campaign Strategy for {strategyRecommendation.product}</h3>
+                <button
+                  onClick={() => setShowStrategyModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Two Column Layout */}
+              <div className="grid grid-cols-2 gap-8">
+                {/* Left Column - Strategy & Settings */}
+                <div className="space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-lg">
+
+                  {/* Custom Prompt Input */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                      Custom Prompt (optional):
+                    </label>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="e.g., make emails promoting this and the hero image will be a guy..."
+                      className="w-full p-2 text-sm border border-blue-300 dark:border-blue-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-blue-800/50"
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Email Type Selection */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                      Email Type:
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['informative', 'sale', 'promotional', 'educational'].map(type => (
+                        <button
+                          key={type}
+                          onClick={() => setSelectedEmailType(type)}
+                          className={`p-2 text-sm rounded border capitalize ${
+                            selectedEmailType === type
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white dark:bg-blue-800/30 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-blue-700/50'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                    <div className="p-3 bg-blue-100 dark:bg-blue-800/30 rounded">
+                      <h5 className="font-medium text-blue-900 dark:text-blue-100 text-sm mb-1">📸 Hero Image Guidelines:</h5>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">{strategyRecommendation.heroImageGuidelines}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Weekly Schedule */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900 dark:text-white text-lg mb-3">📅 Weekly Schedule ({strategyRecommendation.expectedCampaigns} campaigns)</h4>
+                  <div className="space-y-2">
+                    {strategyRecommendation.weeklySchedule.map((schedule: any, index: number) => (
+                      <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        {editingSchedule === index ? (
+                          /* Editing Mode */
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <select
+                                value={schedule.day}
+                                onChange={(e) => {
+                                  const newSchedule = {...schedule, day: e.target.value}
+                                  saveScheduleModification(index, newSchedule)
+                                }}
+                                className="text-sm p-1 border rounded dark:bg-gray-600 dark:border-gray-500"
+                              >
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                                <option value="Sunday">Sunday</option>
+                              </select>
+                              <input
+                                type="time"
+                                value={schedule.time.split(' ')[0]}
+                                onChange={(e) => {
+                                  const newSchedule = {...schedule, time: e.target.value + ' ' + schedule.time.split(' ')[1]}
+                                  saveScheduleModification(index, newSchedule)
+                                }}
+                                className="text-sm p-1 border rounded dark:bg-gray-600 dark:border-gray-500"
+                              />
+                            </div>
+                            <select
+                              value={schedule.type}
+                              onChange={(e) => {
+                                const newSchedule = {...schedule, type: e.target.value}
+                                saveScheduleModification(index, newSchedule)
+                              }}
+                              className="w-full text-sm p-1 border rounded dark:bg-gray-600 dark:border-gray-500"
+                            >
+                              <option value="Primary Campaign">Primary Campaign</option>
+                              <option value="Follow-up">Follow-up</option>
+                              <option value="Premium Drop">Premium Drop</option>
+                              <option value="Weekly Recap">Weekly Recap</option>
+                            </select>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => setEditingSchedule(null)}
+                                className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingSchedule(null)}
+                                className="text-xs bg-gray-600 text-white px-2 py-1 rounded hover:bg-gray-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* Display Mode */
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 dark:text-white">{schedule.day} {schedule.time}</div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">{schedule.type} - {schedule.audience}</div>
+                              <div className="text-sm text-purple-600 dark:text-purple-400 mt-1">📧 {schedule.emailTheme}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span className="font-medium">Hero Image:</span>
+                                <input
+                                  type="text"
+                                  value={schedule.heroImageDesc}
+                                  onChange={(e) => {
+                                    const newSchedule = {...schedule, heroImageDesc: e.target.value}
+                                    saveScheduleModification(index, newSchedule)
+                                  }}
+                                  className="ml-1 text-xs bg-transparent border-b border-gray-300 dark:border-gray-600 focus:outline-none focus:border-purple-500 flex-1"
+                                  placeholder="Describe hero image..."
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4">
+                              <button
+                                onClick={() => modifyScheduleItem(index)}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                              >
+                                Modify
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Buttons spanning both columns */}
+              <div className="flex items-center space-x-3 pt-6 border-t border-gray-200 dark:border-gray-600 mt-6">
+                  <button
+                    onClick={() => {
+                      // Use custom prompt and email type if provided
+                      const enhancedStrategy = {
+                        ...strategyRecommendation,
+                        customPrompt: customPrompt || '',
+                        emailType: selectedEmailType,
+                        weeklySchedule: strategyRecommendation.weeklySchedule.map((schedule: any) => ({
+                          ...schedule,
+                          emailType: selectedEmailType,
+                          customPrompt: customPrompt
+                        }))
+                      }
+                      generateCampaignCards(enhancedStrategy)
+                    }}
+                    disabled={isGeneratingCards}
+                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingCards ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Email Cards
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Regenerate the entire strategy with current settings
+                      const regeneratedStrategy = {
+                        product: selectedProductForPromotion?.name,
+                        primaryAudience: 'Window Shoppers',
+                        strategy: customPrompt
+                          ? `Generate ${selectedEmailType} email campaigns based on: ${customPrompt}`
+                          : `Generate targeted ${selectedEmailType} email campaigns for window shoppers with compelling hero images and personalized content.`,
+                        emailStrategy: 'Each email will feature custom hero images and tailored messaging based on audience behavior patterns.',
+                        heroImageGuidelines: customPrompt.includes('guy') || customPrompt.includes('man') || customPrompt.includes('person')
+                          ? 'Feature people in the hero images as specified. Use clean, studio-lit shots with tech-focused backgrounds.'
+                          : 'Use clean, studio-lit product shots with tech-focused backgrounds. Avoid outdoor/desert settings which reduce iPhone email performance by 40%.',
+                        timing: ['Monday 10AM', 'Wednesday 2PM'],
+                        followUp: 'Auto cart abandonment sequence',
+                        expectedCampaigns: 5,
+                        emailType: selectedEmailType,
+                        customPrompt: customPrompt,
+                        weeklySchedule: [
+                          {
+                            day: 'Monday',
+                            time: '10:00 AM',
+                            type: selectedEmailType === 'sale' ? 'Sale Campaign' : 'Primary Campaign',
+                            audience: 'Window Shoppers',
+                            heroImageDesc: customPrompt || 'Clean studio shot of iPhone 15 Pro on minimal white background with soft lighting',
+                            emailTheme: selectedEmailType === 'sale' ? 'Special Offers' : selectedEmailType === 'educational' ? 'Learning & Tips' : 'Discovery & Exploration',
+                            emailType: selectedEmailType
+                          },
+                          {
+                            day: 'Wednesday',
+                            time: '2:00 PM',
+                            type: selectedEmailType === 'promotional' ? 'Promotional Campaign' : 'Primary Campaign',
+                            audience: 'Window Shoppers',
+                            heroImageDesc: customPrompt || 'iPhone 15 Pro with camera features highlighted, tech workspace background',
+                            emailTheme: selectedEmailType === 'promotional' ? 'Limited Time Offers' : 'Feature Showcase',
+                            emailType: selectedEmailType
+                          },
+                          {
+                            day: 'Thursday',
+                            time: '11:00 AM',
+                            type: 'Follow-up',
+                            audience: 'Cart Abandoners',
+                            heroImageDesc: customPrompt || 'iPhone 15 Pro with shopping cart overlay, urgent but premium feel',
+                            emailTheme: 'Urgency & Completion',
+                            emailType: selectedEmailType
+                          },
+                          {
+                            day: 'Friday',
+                            time: '9:00 AM',
+                            type: selectedEmailType === 'sale' ? 'Flash Sale' : 'Premium Drop',
+                            audience: 'High Converters',
+                            heroImageDesc: customPrompt || 'Luxury product shot with dramatic lighting, black background, exclusive feel',
+                            emailTheme: selectedEmailType === 'sale' ? 'Flash Sale' : 'Exclusive Access',
+                            emailType: selectedEmailType
+                          },
+                          {
+                            day: 'Sunday',
+                            time: '6:00 PM',
+                            type: selectedEmailType === 'educational' ? 'Educational Recap' : 'Weekly Recap',
+                            audience: 'All Segments',
+                            heroImageDesc: customPrompt || 'Collection layout featuring iPhone alongside other products, modern grid',
+                            emailTheme: selectedEmailType === 'educational' ? 'Weekly Learning' : 'Weekly Highlights',
+                            emailType: selectedEmailType
+                          }
+                        ]
+                      }
+                      setStrategyRecommendation(regeneratedStrategy)
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Regenerate Strategy
+                  </button>
+                  <button
+                    onClick={() => setShowStrategyModal(false)}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+        )}
       </div>
     </>
   )

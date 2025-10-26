@@ -142,7 +142,8 @@ Return your response as JSON with the following structure:
         cta: popupData.cta || 'Shop Now',
         backgroundColor: popupData.backgroundColor || '#ffffff',
         textColor: popupData.textColor || '#1f2937',
-        ctaColor: popupData.ctaColor || '#f97316'
+        ctaColor: popupData.ctaColor || '#f97316',
+        imageUrl: undefined as string | undefined
       }
 
       // Generate product image
@@ -189,7 +190,8 @@ Return your response as JSON with the following structure:
         cta: extractCTA(aiResponse) || 'Shop Now',
         backgroundColor: '#ffffff',
         textColor: '#1f2937',
-        ctaColor: getBrandColor(brand)
+        ctaColor: getBrandColor(brand),
+        imageUrl: undefined as string | undefined
       }
 
       // Generate product image for fallback case too
