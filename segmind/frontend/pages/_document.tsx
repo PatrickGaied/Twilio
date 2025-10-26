@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {
   return (
-    <Html>
+    <Html style={{ backgroundColor: '#f9fafb' }}>
       <Head>
         {/* Theme script to prevent FOUC (Flash of Unstyled Content) */}
         <script
@@ -13,13 +13,16 @@ export default function Document() {
                   var theme = localStorage.getItem('theme')
                   var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 
-                  // Set background color immediately to prevent white flash
+                  // Set background color immediately on html element
+                  var html = document.documentElement
                   if (theme === 'dark' || (!theme && systemPrefersDark)) {
-                    document.documentElement.classList.add('dark')
-                    document.documentElement.style.backgroundColor = '#111827'
+                    html.classList.add('dark')
+                    html.style.backgroundColor = '#111827'
+                    document.body.style.backgroundColor = '#111827'
                   } else {
-                    document.documentElement.classList.remove('dark')
-                    document.documentElement.style.backgroundColor = '#f9fafb'
+                    html.classList.remove('dark')
+                    html.style.backgroundColor = '#f9fafb'
+                    document.body.style.backgroundColor = '#f9fafb'
                   }
                 } catch (e) {
                   console.warn('Theme script error:', e)
@@ -28,8 +31,19 @@ export default function Document() {
             `,
           }}
         />
+        {/* Preload critical styles */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html { background-color: #f9fafb !important; }
+              html.dark { background-color: #111827 !important; }
+              body { background-color: inherit !important; margin: 0; padding: 0; }
+              #__next { min-height: 100vh; background-color: inherit; }
+            `,
+          }}
+        />
       </Head>
-      <body>
+      <body style={{ backgroundColor: 'inherit', margin: 0, padding: 0 }}>
         <Main />
         <NextScript />
       </body>

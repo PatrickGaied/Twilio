@@ -20,8 +20,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         messages: [
           {
             role: 'system',
-            content: `You are a marketing campaign generator. Create email campaign cards based on the provided strategy.
-            Return a JSON array of campaign objects with the following structure:
+            content: `You are a marketing campaign generator. Create campaign cards based on the provided strategy.
+
+            For EMAIL campaigns, return a JSON array with this structure:
             {
               "id": "unique_id",
               "day": "day_name",
@@ -35,6 +36,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               "emailContent": "full_email_content",
               "imagePrompt": "image_generation_prompt",
               "status": "pending"
+            }
+
+            For GOOGLE ADS campaigns, return a JSON array with this structure:
+            {
+              "id": "unique_id",
+              "day": "day_name",
+              "time": "time",
+              "type": "campaign_type",
+              "audience": "target_audience",
+              "theme": "ad_theme",
+              "subject": "ad_headline",
+              "preview": "ad_preview_text",
+              "prompt": "generation_prompt",
+              "emailContent": "ad_copy_and_details",
+              "imagePrompt": "visual_description_for_ad",
+              "status": "pending",
+              "aspectRatio": "9:16 or 16:9",
+              "adFormat": "vertical or horizontal"
             }`
           },
           {
@@ -43,11 +62,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             Product: ${product?.name || 'Unknown Product'}
             Strategy: ${strategy.strategy}
             Primary Audience: ${strategy.primaryAudience}
+            Campaign Type: ${strategy.emailType || 'informative'}
+            Custom Instructions: ${strategy.customPrompt || 'None'}
 
             Weekly Schedule:
             ${weeklySchedule.map((s: any) => `${s.day} ${s.time}: ${s.type} for ${s.audience}`).join('\n')}
 
-            Each campaign should have compelling subject lines, engaging email content, and specific image prompts for visual generation.`
+            ${strategy.emailType?.includes('google-ads')
+              ? `Generate GOOGLE ADS campaigns with:
+                - Short, compelling headlines (max 30 characters)
+                - Concise ad copy focused on conversion
+                - Visual descriptions optimized for ${strategy.emailType.includes('vertical') ? 'vertical (9:16)' : 'horizontal (16:9)'} format
+                - Clear call-to-action text
+                - Format-specific layout recommendations`
+              : `Generate EMAIL campaigns with:
+                - Compelling subject lines
+                - Engaging email content
+                - Specific image prompts for visual generation
+                - Professional email formatting`
+            }`
           }
         ],
         temperature: 0.7,
